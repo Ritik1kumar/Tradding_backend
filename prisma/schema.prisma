@@ -187,6 +187,8 @@ model Invite {
 
   invitedBy AppUser @relation("InviteInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
 
+  @@index([phone], map: "ix_invite_phone")
+  @@index([status], map: "ix_invite_status")
   // Partial unique index (one open invite per phone) added via raw SQL in the
   // migration — see prisma/migrations/*/migration.sql (uq_invite_open_phone).
   @@map("invite")
