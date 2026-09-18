@@ -173,6 +173,7 @@ model AppUser {
   freightRoutesUpdated   FreightRoute[]          @relation("FreightRouteUpdatedBy")
   auditLogs              AuditLog[]              @relation("AuditLogActor")
   sourceTemplates        SourceTemplate[]        @relation("SourceTemplateOwner")
+  refreshTokens          RefreshToken[]
 
   @@map("app_user")
 }
@@ -208,6 +209,19 @@ model OtpVerification {
   @@index([userId, createdAt], map: "ix_otp_verification_user")
   @@index([expiresAt], map: "ix_otp_verification_expires")
   @@map("otp_verification")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  user      AppUser   @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime  @db.Timestamptz(6)
+  revokedAt DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("refresh_token")
 }
 
 // ---------------------------------------------------------------------------
