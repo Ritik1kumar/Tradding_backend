@@ -30,9 +30,17 @@ async function sendInvitation({ phone, roleHint, actorUserId }) {
     throw new AppError('An invite for this phone number is already pending', 409);
   }
 
-  const invite = await prisma.invite.create({
-    data: { phone, roleHint: normalizedRoleHint, invitedById: actorUserId },
-  });
+  let invite;
+  try {
+    invite = await prisma.invite.create({
+      data: { phone, roleHint: normalizedRoleHint, invitedById: actorUserId },
+    });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      throw new AppError('An invite for this phone number is already pending', 409);
+    }
+    throw err;
+  }
 
   await prisma.auditLog.create({
     data: {

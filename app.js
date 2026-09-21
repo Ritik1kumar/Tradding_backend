@@ -7,6 +7,7 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var invitesRouter = require('./routes/invites');
+var authRouter = require('./routes/auth');
 var errorHandler = require('./middleware/errorHandler');
 
 var app = express();
@@ -26,6 +27,7 @@ app.use('/users', usersRouter);
 
 var apiV1Router = express.Router();
 apiV1Router.use('/invites', invitesRouter);
+apiV1Router.use('/auth', authRouter);
 apiV1Router.use(errorHandler);
 app.use('/api/v1', apiV1Router);
 
