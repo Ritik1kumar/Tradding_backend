@@ -463,7 +463,7 @@ model AuditLog {
   actorUserId String   @map("actor_user_id") @db.Uuid
   action      String
   entity      String
-  entityId    String   @map("entity_id") @db.Uuid
+  entityId    String   @map("entity_id")
   before      Json?    @db.JsonB
   after       Json?    @db.JsonB
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
