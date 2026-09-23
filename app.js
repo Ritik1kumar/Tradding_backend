@@ -10,6 +10,8 @@ var invitesRouter = require('./routes/invites');
 var authRouter = require('./routes/auth');
 var tosVersionsRouter = require('./routes/tosVersions');
 var tosRouter = require('./routes/tos');
+var commodityCategoriesRouter = require('./routes/commodityCategories');
+var commoditiesRouter = require('./routes/commodities');
 var errorHandler = require('./middleware/errorHandler');
 
 var app = express();
@@ -32,6 +34,8 @@ apiV1Router.use('/invites', invitesRouter);
 apiV1Router.use('/auth', authRouter);
 apiV1Router.use('/tos-versions', tosVersionsRouter);
 apiV1Router.use('/tos', tosRouter);
+apiV1Router.use('/commodity-categories', commodityCategoriesRouter);
+apiV1Router.use('/commodities', commoditiesRouter);
 apiV1Router.use(errorHandler);
 app.use('/api/v1', apiV1Router);
 
