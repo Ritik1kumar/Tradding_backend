@@ -1,15 +1,9 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
+const { validatePhone, validateUuid } = require('../lib/validators');
 
-const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const ALLOWED_ROLE_HINTS = ['buyer', 'seller'];
 const VALID_STATUSES = ['pending', 'accepted', 'revoked'];
-
-function validatePhone(phone) {
-  if (typeof phone !== 'string' || !PHONE_REGEX.test(phone)) {
-    throw new AppError('Invalid phone number format', 400);
-  }
-}
 
 function normalizeRoleHint(roleHint) {
   const normalized = typeof roleHint === 'string' ? roleHint.toLowerCase() : roleHint;
@@ -20,11 +14,11 @@ function normalizeRoleHint(roleHint) {
 }
 
 async function sendInvitation({ phone, roleHint, actorUserId }) {
-  validatePhone(phone);
+  const normalizedPhone = validatePhone(phone);
   const normalizedRoleHint = normalizeRoleHint(roleHint);
 
   const existingPending = await prisma.invite.findFirst({
-    where: { phone, status: 'pending' },
+    where: { phone: normalizedPhone, status: 'pending' },
   });
   if (existingPending) {
     throw new AppError('An invite for this phone number is already pending', 409);
@@ -33,7 +27,7 @@ async function sendInvitation({ phone, roleHint, actorUserId }) {
   let invite;
   try {
     invite = await prisma.invite.create({
-      data: { phone, roleHint: normalizedRoleHint, invitedById: actorUserId },
+      data: { phone: normalizedPhone, roleHint: normalizedRoleHint, invitedById: actorUserId },
     });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -68,6 +62,7 @@ async function listInvitations({ status }) {
 }
 
 async function cancelInvitation({ id, actorUserId }) {
+  validateUuid(id);
   const invite = await prisma.invite.findUnique({ where: { id } });
   if (!invite) {
     throw new AppError('Invite not found', 404);

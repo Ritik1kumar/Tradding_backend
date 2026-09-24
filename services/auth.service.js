@@ -2,9 +2,23 @@ const ms = require('ms');
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
 const otpService = require('./otp.service');
+const { validatePhone } = require('../lib/validators');
 const { signAccessToken, generateRefreshToken, hashToken } = require('../lib/tokens');
 
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+const OTP_REGEX = /^\d{4,6}$/;
+
+function validateOtp(otp) {
+  if (typeof otp !== 'string' || !OTP_REGEX.test(otp)) {
+    throw new AppError('otp must be a 4-6 digit code', 400);
+  }
+}
+
+function validateRefreshToken(refreshToken) {
+  if (typeof refreshToken !== 'string' || !refreshToken.trim()) {
+    throw new AppError('refreshToken is required', 400);
+  }
+}
 
 async function checkLoginEligibility(phone) {
   const user = await prisma.appUser.findUnique({ where: { phone } });
@@ -43,22 +57,26 @@ async function issueTokenPair(user) {
 }
 
 async function login(phone) {
-  await checkLoginEligibility(phone);
-  otpService.sendOtp(phone);
+  const normalizedPhone = validatePhone(phone);
+  await checkLoginEligibility(normalizedPhone);
+  otpService.sendOtp(normalizedPhone);
 }
 
 async function verifyOtp({ phone, otp }) {
-  if (!otpService.verifyOtpCode(phone, otp)) {
+  const normalizedPhone = validatePhone(phone);
+  validateOtp(otp);
+
+  if (!otpService.verifyOtpCode(normalizedPhone, otp)) {
     throw new AppError('Invalid OTP', 401);
   }
 
-  const eligibility = await checkLoginEligibility(phone);
+  const eligibility = await checkLoginEligibility(normalizedPhone);
   let user = eligibility.existingUser;
 
   if (!user) {
     user = await prisma.$transaction(async (tx) => {
       const invite = await tx.invite.findFirst({
-        where: { phone, status: 'pending' },
+        where: { phone: normalizedPhone, status: 'pending' },
       });
       if (!invite) {
         throw new AppError('This number is not invited', 403);
@@ -66,7 +84,7 @@ async function verifyOtp({ phone, otp }) {
 
       const createdUser = await tx.appUser.create({
         data: {
-          phone,
+          phone: normalizedPhone,
           roles: [invite.roleHint],
           invitedById: invite.invitedById,
           status: 'active',
@@ -87,6 +105,7 @@ async function verifyOtp({ phone, otp }) {
 }
 
 async function refreshAccessToken({ refreshToken }) {
+  validateRefreshToken(refreshToken);
   const tokenHash = hashToken(refreshToken);
 
   const stored = await prisma.refreshToken.findFirst({
@@ -110,6 +129,7 @@ async function refreshAccessToken({ refreshToken }) {
 }
 
 async function logout({ refreshToken }) {
+  validateRefreshToken(refreshToken);
   const tokenHash = hashToken(refreshToken);
   await prisma.refreshToken.updateMany({
     where: { tokenHash, revokedAt: null },

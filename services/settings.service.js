@@ -1,6 +1,6 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
-const { validateSettingValue } = require('./settings.validation');
+const { validateSettingValue, validateSettingKey } = require('./settings.validation');
 
 async function listSettings() {
   return prisma.setting.findMany({ orderBy: { key: 'asc' } });
@@ -15,9 +15,14 @@ async function getSetting(key) {
 }
 
 async function upsertSetting(key, value, actorUserId) {
-  const validationError = validateSettingValue(key, value);
-  if (validationError) {
-    throw new AppError(validationError, 400);
+  const keyError = validateSettingKey(key);
+  if (keyError) {
+    throw new AppError(keyError, 400);
+  }
+
+  const valueError = validateSettingValue(key, value);
+  if (valueError) {
+    throw new AppError(valueError, 400);
   }
 
   const existing = await prisma.setting.findUnique({ where: { key } });

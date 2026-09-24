@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
+const { validateUuid } = require('../lib/validators');
 
 function validateName(name) {
   const trimmed = typeof name === 'string' ? name.trim() : '';
@@ -41,6 +42,7 @@ async function listCategories() {
 }
 
 async function renameCategory(id, newName, actorUserId) {
+  validateUuid(id);
   const existing = await prisma.commodityCategory.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Category not found', 404);
@@ -76,6 +78,7 @@ async function renameCategory(id, newName, actorUserId) {
 }
 
 async function deleteCategory(id, actorUserId) {
+  validateUuid(id);
   const existing = await prisma.commodityCategory.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Category not found', 404);

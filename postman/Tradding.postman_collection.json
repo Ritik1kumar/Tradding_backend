@@ -1,0 +1,372 @@
+{
+  "info": {
+    "name": "Tradding API",
+    "description": "Commodity brokerage platform backend — /api/v1. Import this, set `baseUrl` if not on localhost:3000, then run Auth > Verify OTP (admin) first — it auto-saves accessToken/refreshToken for every other request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "adminPhone", "value": "9810000001" },
+    { "key": "newUserPhone", "value": "9810000099" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "inviteId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "commodityId", "value": "" },
+    { "key": "tosVersion", "value": "" },
+    { "key": "settingKey", "value": "price_expiry_time" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{adminPhone}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Verify OTP (admin) — saves tokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "  pm.test('tokens saved', function () { pm.expect(json.data.accessToken).to.be.a('string'); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{adminPhone}}\",\n  \"otp\": \"1111\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/verify-otp", "host": ["{{baseUrl}}"], "path": ["auth", "verify-otp"] }
+          }
+        },
+        {
+          "name": "Refresh access token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invites",
+      "item": [
+        {
+          "name": "Send invite — saves inviteId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) { pm.collectionVariables.set('inviteId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{newUserPhone}}\",\n  \"roleHint\": \"seller\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/invites", "host": ["{{baseUrl}}"], "path": ["invites"] }
+          }
+        },
+        {
+          "name": "List invites",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/invites?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["invites"],
+              "query": [{ "key": "status", "value": "pending" }]
+            }
+          }
+        },
+        {
+          "name": "Cancel invite",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/invites/{{inviteId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["invites", "{{inviteId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commodity Categories",
+      "item": [
+        {
+          "name": "Create category — saves categoryId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) { pm.collectionVariables.set('categoryId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Rajma\"\n}" },
+            "url": { "raw": "{{baseUrl}}/commodity-categories", "host": ["{{baseUrl}}"], "path": ["commodity-categories"] }
+          }
+        },
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/commodity-categories", "host": ["{{baseUrl}}"], "path": ["commodity-categories"] }
+          }
+        },
+        {
+          "name": "Rename category",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Rajma Lal\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/commodity-categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commodity-categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete category",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/commodity-categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commodity-categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commodities",
+      "item": [
+        {
+          "name": "Create commodity — saves commodityId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) { pm.collectionVariables.set('commodityId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Chitra Pila Badshah\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/commodities", "host": ["{{baseUrl}}"], "path": ["commodities"] }
+          }
+        },
+        {
+          "name": "List commodities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/commodities?categoryId={{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commodities"],
+              "query": [{ "key": "categoryId", "value": "{{categoryId}}" }]
+            }
+          }
+        },
+        {
+          "name": "Update commodity",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/commodities/{{commodityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commodities", "{{commodityId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete commodity",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/commodities/{{commodityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commodities", "{{commodityId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ToS Versions (admin)",
+      "item": [
+        {
+          "name": "Publish version — saves tosVersion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) { pm.collectionVariables.set('tosVersion', json.data.version); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"effectiveDate\": \"2026-10-01\",\n  \"termsUrl\": \"https://example.com/terms\",\n  \"privacyUrl\": \"https://example.com/privacy\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/tos-versions", "host": ["{{baseUrl}}"], "path": ["tos-versions"] }
+          }
+        },
+        {
+          "name": "List versions",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tos-versions", "host": ["{{baseUrl}}"], "path": ["tos-versions"] }
+          }
+        },
+        {
+          "name": "Current version",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tos-versions/current", "host": ["{{baseUrl}}"], "path": ["tos-versions", "current"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ToS Acceptance",
+      "item": [
+        {
+          "name": "Accept ToS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"version\": {{tosVersion}}\n}" },
+            "url": { "raw": "{{baseUrl}}/tos/accept", "host": ["{{baseUrl}}"], "path": ["tos", "accept"] }
+          }
+        },
+        {
+          "name": "ToS status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tos/status", "host": ["{{baseUrl}}"], "path": ["tos", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "List settings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/settings", "host": ["{{baseUrl}}"], "path": ["settings"] }
+          }
+        },
+        {
+          "name": "Get setting by key",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/settings/{{settingKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["settings", "{{settingKey}}"]
+            }
+          }
+        },
+        {
+          "name": "Update setting (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"value\": { \"time\": \"02:00\" }\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/settings/{{settingKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["settings", "{{settingKey}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

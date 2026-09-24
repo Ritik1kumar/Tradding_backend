@@ -2,6 +2,7 @@ const inviteService = require('../services/invite.service');
 const { sendSuccess } = require('../lib/response');
 
 async function sendInvitation(req, res, next) {
+  console.log("this is issue")
   try {
     const { phone, roleHint } = req.body;
     const invite = await inviteService.sendInvitation({
