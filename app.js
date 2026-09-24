@@ -2,6 +2,7 @@ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
+var cors = require('cors');
 var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
@@ -13,6 +14,14 @@ var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
+// CORS_ORIGIN is a comma-separated whitelist (e.g. "https://admin.example.com,http://localhost:5173").
+// Left unset it allows any origin — fine for now since auth is bearer-token (no cookies), no
+var corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(function (origin) { return origin.trim(); })
+  : true;
+
+app.use(cors({ origin: corsOrigins }));
 
 app.use(logger('dev'));
 app.use(express.json());
