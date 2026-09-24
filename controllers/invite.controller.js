@@ -1,4 +1,5 @@
 const inviteService = require('../services/invite.service');
+const { sendSuccess } = require('../lib/response');
 
 async function sendInvitation(req, res, next) {
   try {
@@ -8,7 +9,7 @@ async function sendInvitation(req, res, next) {
       roleHint,
       actorUserId: req.user.id,
     });
-    res.status(201).json(invite);
+    sendSuccess(res, 201, invite);
   } catch (err) {
     next(err);
   }
@@ -18,7 +19,7 @@ async function listInvitations(req, res, next) {
   try {
     const { status } = req.query;
     const invites = await inviteService.listInvitations({ status });
-    res.status(200).json(invites);
+    sendSuccess(res, 200, invites);
   } catch (err) {
     next(err);
   }
@@ -31,7 +32,7 @@ async function cancelInvitation(req, res, next) {
       id,
       actorUserId: req.user.id,
     });
-    res.status(200).json(invite);
+    sendSuccess(res, 200, invite);
   } catch (err) {
     next(err);
   }

@@ -6,14 +6,7 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-var invitesRouter = require('./routes/invites');
-var authRouter = require('./routes/auth');
-var tosVersionsRouter = require('./routes/tosVersions');
-var tosRouter = require('./routes/tos');
-var commodityCategoriesRouter = require('./routes/commodityCategories');
-var commoditiesRouter = require('./routes/commodities');
-var settingsRouter = require('./routes/settings');
-var errorHandler = require('./middleware/errorHandler');
+var v1Router = require('./routes/v1');
 
 var app = express();
 
@@ -29,17 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
-var apiV1Router = express.Router();
-apiV1Router.use('/invites', invitesRouter);
-apiV1Router.use('/auth', authRouter);
-apiV1Router.use('/tos-versions', tosVersionsRouter);
-apiV1Router.use('/tos', tosRouter);
-apiV1Router.use('/commodity-categories', commodityCategoriesRouter);
-apiV1Router.use('/commodities', commoditiesRouter);
-apiV1Router.use('/settings', settingsRouter);
-apiV1Router.use(errorHandler);
-app.use('/api/v1', apiV1Router);
+app.use('/api/v1', v1Router);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
