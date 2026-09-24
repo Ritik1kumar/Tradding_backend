@@ -1,5 +1,6 @@
 const commodityCategoryService = require('../services/commodityCategory.service');
 const { sendSuccess } = require('../lib/response');
+const { parsePagination, buildMeta } = require('../lib/pagination');
 
 async function create(req, res, next) {
   try {
@@ -13,8 +14,10 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const categories = await commodityCategoryService.listCategories();
-    sendSuccess(res, 200, categories);
+    const { name } = req.query;
+    const { page, limit, skip, take } = parsePagination(req.query);
+    const { data, total } = await commodityCategoryService.listCategories({ name, skip, take });
+    sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
     next(err);
   }

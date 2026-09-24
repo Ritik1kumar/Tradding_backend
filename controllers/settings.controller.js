@@ -1,10 +1,13 @@
 const settingsService = require('../services/settings.service');
 const { sendSuccess } = require('../lib/response');
+const { parsePagination, buildMeta } = require('../lib/pagination');
 
 async function list(req, res, next) {
   try {
-    const settings = await settingsService.listSettings();
-    sendSuccess(res, 200, settings);
+    const { key } = req.query;
+    const { page, limit, skip, take } = parsePagination(req.query);
+    const { data, total } = await settingsService.listSettings({ key, skip, take });
+    sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
     next(err);
   }

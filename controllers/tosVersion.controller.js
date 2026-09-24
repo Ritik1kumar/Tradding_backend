@@ -1,5 +1,6 @@
 const tosVersionService = require('../services/tosVersion.service');
 const { sendSuccess } = require('../lib/response');
+const { parsePagination, buildMeta } = require('../lib/pagination');
 
 async function publish(req, res, next) {
   try {
@@ -16,8 +17,9 @@ async function publish(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const versions = await tosVersionService.listVersions();
-    sendSuccess(res, 200, versions);
+    const { page, limit, skip, take } = parsePagination(req.query);
+    const { data, total } = await tosVersionService.listVersions({ skip, take });
+    sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
     next(err);
   }

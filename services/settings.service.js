@@ -1,9 +1,17 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
 const { validateSettingValue, validateSettingKey } = require('./settings.validation');
+const { buildContainsFilter } = require('../lib/filters');
 
-async function listSettings() {
-  return prisma.setting.findMany({ orderBy: { key: 'asc' } });
+async function listSettings({ key, skip, take } = {}) {
+  const keyFilter = buildContainsFilter(key);
+  const where = keyFilter ? { key: keyFilter } : undefined;
+
+  const [data, total] = await Promise.all([
+    prisma.setting.findMany({ where, orderBy: { key: 'asc' }, skip, take }),
+    prisma.setting.count({ where }),
+  ]);
+  return { data, total };
 }
 
 async function getSetting(key) {

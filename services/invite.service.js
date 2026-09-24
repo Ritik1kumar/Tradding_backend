@@ -1,6 +1,7 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
 const { validatePhone, validateUuid } = require('../lib/validators');
+const { buildContainsFilter, buildDateRangeFilter } = require('../lib/filters');
 
 const ALLOWED_ROLE_HINTS = ['buyer', 'seller'];
 const VALID_STATUSES = ['pending', 'accepted', 'revoked'];
@@ -50,15 +51,29 @@ async function sendInvitation({ phone, roleHint, actorUserId }) {
   return invite;
 }
 
-async function listInvitations({ status }) {
+async function listInvitations({ status, phone, roleHint, createdFrom, createdTo, skip, take }) {
   if (status && !VALID_STATUSES.includes(status)) {
     throw new AppError(`status must be one of: ${VALID_STATUSES.join(', ')}`, 400);
   }
+  if (roleHint && !ALLOWED_ROLE_HINTS.includes(roleHint)) {
+    throw new AppError(`roleHint must be one of: ${ALLOWED_ROLE_HINTS.join(', ')}`, 400);
+  }
 
-  return prisma.invite.findMany({
-    where: status ? { status } : undefined,
-    orderBy: { createdAt: 'desc' },
-  });
+  const phoneFilter = buildContainsFilter(phone);
+  const createdAtFilter = buildDateRangeFilter(createdFrom, createdTo, 'created');
+
+  const where = {
+    ...(status ? { status } : {}),
+    ...(roleHint ? { roleHint } : {}),
+    ...(phoneFilter ? { phone: phoneFilter } : {}),
+    ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.invite.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+    prisma.invite.count({ where }),
+  ]);
+  return { data, total };
 }
 
 async function cancelInvitation({ id, actorUserId }) {

@@ -1,6 +1,7 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
 const { validateUuid } = require('../lib/validators');
+const { buildContainsFilter } = require('../lib/filters');
 
 function validateName(name) {
   const trimmed = typeof name === 'string' ? name.trim() : '';
@@ -45,15 +46,26 @@ async function createCommodity(categoryId, name, actorUserId) {
   return commodity;
 }
 
-async function listCommodities(categoryId) {
+async function listCommodities(categoryId, { name, skip, take } = {}) {
   if (categoryId !== undefined) {
     validateUuid(categoryId, 'categoryId');
   }
-  return prisma.commodity.findMany({
-    where: categoryId ? { categoryId } : undefined,
-    orderBy: { name: 'asc' },
-    include: { category: { select: { name: true } } },
-  });
+  const nameFilter = buildContainsFilter(name);
+  const where = {
+    ...(categoryId ? { categoryId } : {}),
+    ...(nameFilter ? { name: nameFilter } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.commodity.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      include: { category: { select: { name: true } } },
+      skip,
+      take,
+    }),
+    prisma.commodity.count({ where }),
+  ]);
+  return { data, total };
 }
 
 async function updateCommodity(id, { name, categoryId }, actorUserId) {

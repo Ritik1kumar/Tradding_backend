@@ -23,3 +23,6 @@ prisma/*.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Postman collection (local only, not pushed)
+postman/Tradding.postman_collection.json

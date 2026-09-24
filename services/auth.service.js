@@ -10,7 +10,7 @@ const OTP_REGEX = /^\d{4,6}$/;
 
 function validateOtp(otp) {
   if (typeof otp !== 'string' || !OTP_REGEX.test(otp)) {
-    throw new AppError('otp must be a 4-6 digit code', 400);
+    throw new AppError('otp must be a 4 digit code', 400);
   }
 }
 
