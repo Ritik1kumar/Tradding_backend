@@ -12,6 +12,7 @@ var tosVersionsRouter = require('./routes/tosVersions');
 var tosRouter = require('./routes/tos');
 var commodityCategoriesRouter = require('./routes/commodityCategories');
 var commoditiesRouter = require('./routes/commodities');
+var settingsRouter = require('./routes/settings');
 var errorHandler = require('./middleware/errorHandler');
 
 var app = express();
@@ -36,6 +37,7 @@ apiV1Router.use('/tos-versions', tosVersionsRouter);
 apiV1Router.use('/tos', tosRouter);
 apiV1Router.use('/commodity-categories', commodityCategoriesRouter);
 apiV1Router.use('/commodities', commoditiesRouter);
+apiV1Router.use('/settings', settingsRouter);
 apiV1Router.use(errorHandler);
 app.use('/api/v1', apiV1Router);
 
