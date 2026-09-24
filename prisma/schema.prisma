@@ -171,6 +171,7 @@ model AppUser {
   tradesAsSeller         Trade[]                 @relation("TradeSeller")
   tradesCancelled        Trade[]                 @relation("TradeCancelledByAdmin")
   freightRoutesUpdated   FreightRoute[]          @relation("FreightRouteUpdatedBy")
+  settingsUpdated        Setting[]               @relation("SettingUpdatedBy")
   auditLogs              AuditLog[]              @relation("AuditLogActor")
   sourceTemplates        SourceTemplate[]        @relation("SourceTemplateOwner")
   refreshTokens          RefreshToken[]
@@ -453,7 +454,10 @@ model FreightRoute {
 model Setting {
   key       String   @id
   value     Json     @db.JsonB
+  updatedBy String?  @map("updated_by") @db.Uuid
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  updatedByUser AppUser? @relation("SettingUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   @@map("setting")
 }

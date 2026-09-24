@@ -6,6 +6,10 @@ const ADMIN_USERS = [
   { phone: '+919810000002', name: 'Admin Two' },
 ];
 
+// Default settings, seeded only if the key doesn't already exist — never
+// overwrite a value an admin has since changed via the API.
+const DEFAULT_SETTINGS = [{ key: 'price_expiry_time', value: { time: '02:00' } }];
+
 async function main() {
   for (const admin of ADMIN_USERS) {
     await prisma.appUser.upsert({
@@ -18,6 +22,15 @@ async function main() {
         status: 'active',
       },
     });
+  }
+
+  for (const setting of DEFAULT_SETTINGS) {
+    const existing = await prisma.setting.findUnique({ where: { key: setting.key } });
+    if (!existing) {
+      await prisma.setting.create({
+        data: { key: setting.key, value: setting.value, updatedBy: null },
+      });
+    }
   }
 }
 
