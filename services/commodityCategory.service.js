@@ -1,5 +1,7 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
+const { validateUuid } = require('../lib/validators');
+const { buildContainsFilter } = require('../lib/filters');
 
 function validateName(name) {
   const trimmed = typeof name === 'string' ? name.trim() : '';
@@ -36,11 +38,19 @@ async function createCategory(name, actorUserId) {
   return category;
 }
 
-async function listCategories() {
-  return prisma.commodityCategory.findMany({ orderBy: { name: 'asc' } });
+async function listCategories({ name, skip, take } = {}) {
+  const nameFilter = buildContainsFilter(name);
+  const where = nameFilter ? { name: nameFilter } : undefined;
+
+  const [data, total] = await Promise.all([
+    prisma.commodityCategory.findMany({ where, orderBy: { name: 'asc' }, skip, take }),
+    prisma.commodityCategory.count({ where }),
+  ]);
+  return { data, total };
 }
 
 async function renameCategory(id, newName, actorUserId) {
+  validateUuid(id);
   const existing = await prisma.commodityCategory.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Category not found', 404);
@@ -76,6 +86,7 @@ async function renameCategory(id, newName, actorUserId) {
 }
 
 async function deleteCategory(id, actorUserId) {
+  validateUuid(id);
   const existing = await prisma.commodityCategory.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Category not found', 404);

@@ -1,10 +1,12 @@
 const commodityService = require('../services/commodity.service');
+const { sendSuccess } = require('../lib/response');
+const { parsePagination, buildMeta } = require('../lib/pagination');
 
 async function create(req, res, next) {
   try {
     const { categoryId, name } = req.body;
     const commodity = await commodityService.createCommodity(categoryId, name, req.user.id);
-    res.status(201).json(commodity);
+    sendSuccess(res, 201, commodity);
   } catch (err) {
     next(err);
   }
@@ -12,9 +14,14 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const { categoryId } = req.query;
-    const commodities = await commodityService.listCommodities(categoryId);
-    res.status(200).json(commodities);
+    const { categoryId, name } = req.query;
+    const { page, limit, skip, take } = parsePagination(req.query);
+    const { data, total } = await commodityService.listCommodities(categoryId, {
+      name,
+      skip,
+      take,
+    });
+    sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
     next(err);
   }
@@ -29,7 +36,7 @@ async function update(req, res, next) {
       { name, categoryId },
       req.user.id
     );
-    res.status(200).json(commodity);
+    sendSuccess(res, 200, commodity);
   } catch (err) {
     next(err);
   }

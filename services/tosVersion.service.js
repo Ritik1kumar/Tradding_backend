@@ -52,8 +52,12 @@ async function publishVersion({ effectiveDate, termsUrl, privacyUrl }, actorUser
   return tosVersion;
 }
 
-async function listVersions() {
-  return prisma.tosVersion.findMany({ orderBy: { version: 'desc' } });
+async function listVersions({ skip, take } = {}) {
+  const [data, total] = await Promise.all([
+    prisma.tosVersion.findMany({ orderBy: { version: 'desc' }, skip, take }),
+    prisma.tosVersion.count(),
+  ]);
+  return { data, total };
 }
 
 async function getCurrentVersion() {

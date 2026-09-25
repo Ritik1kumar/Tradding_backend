@@ -2,24 +2,26 @@ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
+var cors = require('cors');
 var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-var invitesRouter = require('./routes/invites');
-var authRouter = require('./routes/auth');
-var tosVersionsRouter = require('./routes/tosVersions');
-var tosRouter = require('./routes/tos');
-var commodityCategoriesRouter = require('./routes/commodityCategories');
-var commoditiesRouter = require('./routes/commodities');
-var settingsRouter = require('./routes/settings');
-var errorHandler = require('./middleware/errorHandler');
+var v1Router = require('./routes/v1');
 
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
+// CORS_ORIGIN is a comma-separated whitelist (e.g. "https://admin.example.com,http://localhost:5173").
+// Left unset it allows any origin — fine for now since auth is bearer-token (no cookies), no
+var corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(function (origin) { return origin.trim(); })
+  : true;
+
+app.use(cors({ origin: corsOrigins }));
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -29,17 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
-var apiV1Router = express.Router();
-apiV1Router.use('/invites', invitesRouter);
-apiV1Router.use('/auth', authRouter);
-apiV1Router.use('/tos-versions', tosVersionsRouter);
-apiV1Router.use('/tos', tosRouter);
-apiV1Router.use('/commodity-categories', commodityCategoriesRouter);
-apiV1Router.use('/commodities', commoditiesRouter);
-apiV1Router.use('/settings', settingsRouter);
-apiV1Router.use(errorHandler);
-app.use('/api/v1', apiV1Router);
+app.use('/api/v1', v1Router);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

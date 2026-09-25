@@ -1,5 +1,7 @@
 const prisma = require('../lib/prisma');
 const { AppError } = require('../lib/errors');
+const { validateUuid } = require('../lib/validators');
+const { buildContainsFilter } = require('../lib/filters');
 
 function validateName(name) {
   const trimmed = typeof name === 'string' ? name.trim() : '';
@@ -10,6 +12,7 @@ function validateName(name) {
 }
 
 async function createCommodity(categoryId, name, actorUserId) {
+  validateUuid(categoryId, 'categoryId');
   const category = await prisma.commodityCategory.findUnique({ where: { id: categoryId } });
   if (!category) {
     throw new AppError('Category not found', 404);
@@ -43,15 +46,34 @@ async function createCommodity(categoryId, name, actorUserId) {
   return commodity;
 }
 
-async function listCommodities(categoryId) {
-  return prisma.commodity.findMany({
-    where: categoryId ? { categoryId } : undefined,
-    orderBy: { name: 'asc' },
-    include: { category: { select: { name: true } } },
-  });
+async function listCommodities(categoryId, { name, skip, take } = {}) {
+  if (categoryId !== undefined) {
+    validateUuid(categoryId, 'categoryId');
+  }
+  const nameFilter = buildContainsFilter(name);
+  const where = {
+    ...(categoryId ? { categoryId } : {}),
+    ...(nameFilter ? { name: nameFilter } : {}),
+  };
+  const [data, total] = await Promise.all([
+    prisma.commodity.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      include: { category: { select: { name: true } } },
+      skip,
+      take,
+    }),
+    prisma.commodity.count({ where }),
+  ]);
+  return { data, total };
 }
 
 async function updateCommodity(id, { name, categoryId }, actorUserId) {
+  validateUuid(id);
+  if (categoryId !== undefined) {
+    validateUuid(categoryId, 'categoryId');
+  }
+
   const existing = await prisma.commodity.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Commodity not found', 404);
@@ -97,6 +119,7 @@ async function updateCommodity(id, { name, categoryId }, actorUserId) {
 }
 
 async function deleteCommodity(id, actorUserId) {
+  validateUuid(id);
   const existing = await prisma.commodity.findUnique({ where: { id } });
   if (!existing) {
     throw new AppError('Commodity not found', 404);

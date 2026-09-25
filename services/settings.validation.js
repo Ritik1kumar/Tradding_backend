@@ -1,3 +1,12 @@
+const SETTING_KEY_REGEX = /^[a-z][a-z0-9_]{0,63}$/;
+
+function validateSettingKey(key) {
+  if (typeof key !== 'string' || !SETTING_KEY_REGEX.test(key)) {
+    return 'key must be a lowercase snake_case identifier (letters, digits, underscore, max 64 chars)';
+  }
+  return null;
+}
+
 const SETTINGS_REGISTRY = {
   price_expiry_time: {
     // value shape: { "time": "02:00" } — 24hr HH:mm string; timezone is a fixed
@@ -22,4 +31,4 @@ function validateSettingValue(key, value) {
   return null;
 }
 
-module.exports = { SETTINGS_REGISTRY, validateSettingValue };
+module.exports = { SETTINGS_REGISTRY, validateSettingValue, validateSettingKey };

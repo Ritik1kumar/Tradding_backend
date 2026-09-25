@@ -1,6 +1,9 @@
 const inviteService = require('../services/invite.service');
+const { sendSuccess } = require('../lib/response');
+const { parsePagination, buildMeta } = require('../lib/pagination');
 
 async function sendInvitation(req, res, next) {
+  console.log("this is issue")
   try {
     const { phone, roleHint } = req.body;
     const invite = await inviteService.sendInvitation({
@@ -8,7 +11,7 @@ async function sendInvitation(req, res, next) {
       roleHint,
       actorUserId: req.user.id,
     });
-    res.status(201).json(invite);
+    sendSuccess(res, 201, invite);
   } catch (err) {
     next(err);
   }
@@ -16,9 +19,18 @@ async function sendInvitation(req, res, next) {
 
 async function listInvitations(req, res, next) {
   try {
-    const { status } = req.query;
-    const invites = await inviteService.listInvitations({ status });
-    res.status(200).json(invites);
+    const { status, phone, roleHint, createdFrom, createdTo } = req.query;
+    const { page, limit, skip, take } = parsePagination(req.query);
+    const { data, total } = await inviteService.listInvitations({
+      status,
+      phone,
+      roleHint,
+      createdFrom,
+      createdTo,
+      skip,
+      take,
+    });
+    sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
     next(err);
   }
@@ -31,7 +43,7 @@ async function cancelInvitation(req, res, next) {
       id,
       actorUserId: req.user.id,
     });
-    res.status(200).json(invite);
+    sendSuccess(res, 200, invite);
   } catch (err) {
     next(err);
   }

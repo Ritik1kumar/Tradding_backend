@@ -24,6 +24,10 @@ async function getTosStatus(userId) {
 }
 
 async function acceptTos(userId, requestedVersion) {
+  if (!Number.isInteger(requestedVersion)) {
+    throw new AppError('version must be an integer', 400);
+  }
+
   const current = await tosVersionService.getCurrentVersion();
 
   if (requestedVersion !== current.version) {
