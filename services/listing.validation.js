@@ -1,0 +1,201 @@
+const { AppError } = require('../lib/errors');
+const { validateUuid } = require('../lib/validators');
+
+const URL_REGEX = /^https?:\/\/\S+$/i;
+const VALID_SIDES = ['SELL', 'BUY'];
+
+function requireString(value, fieldName) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new AppError(`${fieldName} is required`, 400);
+  }
+  return value.trim();
+}
+
+function optionalString(value, fieldName) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw new AppError(`${fieldName} must be a string`, 400);
+  }
+  return value.trim() || null;
+}
+
+function requirePositiveInt(value, fieldName) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new AppError(`${fieldName} must be a positive integer`, 400);
+  }
+  return parsed;
+}
+
+function optionalPositiveInt(value, fieldName) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  return requirePositiveInt(value, fieldName);
+}
+
+// CREATE-only: price is legitimately absent ("shell" listing / "open to offers").
+function optionalPositiveDecimal(value, fieldName) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new AppError(`${fieldName} must be a positive number`, 400);
+  }
+  return parsed;
+}
+
+// PATCH-only: price is sticky and never nulled (CLAUDE.md §2), so a price key
+// present in a patch body must be a real positive number — null/omitted-looking
+// values are rejected rather than silently treated as "clear the price".
+function requirePositiveDecimal(value, fieldName) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new AppError(`${fieldName} must be a positive number`, 400);
+  }
+  return parsed;
+}
+
+function optionalUrlArray(value, fieldName) {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    throw new AppError(`${fieldName} must be an array of URLs`, 400);
+  }
+  return value.map((url) => {
+    if (typeof url !== 'string' || !URL_REGEX.test(url)) {
+      throw new AppError(`${fieldName} must contain valid http(s) URLs`, 400);
+    }
+    return url;
+  });
+}
+
+function validateListingIdentity(body) {
+  return {
+    categoryId: validateUuid(body.categoryId, 'categoryId'),
+    commodityId: validateUuid(body.commodityId, 'commodityId'),
+  };
+}
+
+// side = BUY (create): deliberately minimal — only 4 real client inputs.
+// Everything else on the row is server-derived (see listing.service.js).
+function validateBuyRequirementInput(body) {
+  return {
+    ...validateListingIdentity(body),
+    price: optionalPositiveDecimal(body.price, 'price'),
+    quantityBags: requirePositiveInt(body.quantityBags, 'quantityBags'),
+  };
+}
+
+// side = SELL (create): the full form.
+function validateSellListingInput(body) {
+  return {
+    ...validateListingIdentity(body),
+    itemName: requireString(body.itemName, 'itemName'),
+    quality: optionalString(body.quality, 'quality'),
+    quantityBags: requirePositiveInt(body.quantityBags, 'quantityBags'),
+    weightKg: optionalPositiveInt(body.weightKg, 'weightKg'),
+    price: optionalPositiveDecimal(body.price, 'price'),
+    photoUrls: optionalUrlArray(body.photoUrls, 'photoUrls'),
+    videoUrls: optionalUrlArray(body.videoUrls, 'videoUrls'),
+    moisture: optionalString(body.moisture, 'moisture'),
+    color: optionalString(body.color, 'color'),
+    size: optionalString(body.size, 'size'),
+    paymentTerms: optionalString(body.paymentTerms, 'paymentTerms'),
+    notes: optionalString(body.notes, 'notes'),
+  };
+}
+
+// Dispatcher: POST /listings validates by body.side.
+function validateListingCreateInput(body) {
+  if (!VALID_SIDES.includes(body.side)) {
+    throw new AppError(`side must be one of: ${VALID_SIDES.join(', ')}`, 400);
+  }
+  return body.side === 'BUY'
+    ? { side: 'BUY', ...validateBuyRequirementInput(body) }
+    : { side: 'SELL', ...validateSellListingInput(body) };
+}
+
+// PATCH: same per-field rules, but every field is optional and `side` is
+// immutable — the existing row's side is passed in, never read from the body.
+function validateBuyRequirementPatch(body) {
+  const patch = {};
+  if (body.categoryId !== undefined) {
+    patch.categoryId = validateUuid(body.categoryId, 'categoryId');
+  }
+  if (body.commodityId !== undefined) {
+    patch.commodityId = validateUuid(body.commodityId, 'commodityId');
+  }
+  if (body.price !== undefined) {
+    patch.price = requirePositiveDecimal(body.price, 'price');
+  }
+  if (body.quantityBags !== undefined) {
+    patch.quantityBags = requirePositiveInt(body.quantityBags, 'quantityBags');
+  }
+  return patch;
+}
+
+function validateSellListingPatch(body) {
+  const patch = {};
+  if (body.categoryId !== undefined) {
+    patch.categoryId = validateUuid(body.categoryId, 'categoryId');
+  }
+  if (body.commodityId !== undefined) {
+    patch.commodityId = validateUuid(body.commodityId, 'commodityId');
+  }
+  if (body.itemName !== undefined) {
+    patch.itemName = requireString(body.itemName, 'itemName');
+  }
+  if (body.quality !== undefined) {
+    patch.quality = optionalString(body.quality, 'quality');
+  }
+  if (body.quantityBags !== undefined) {
+    patch.quantityBags = requirePositiveInt(body.quantityBags, 'quantityBags');
+  }
+  if (body.weightKg !== undefined) {
+    patch.weightKg = optionalPositiveInt(body.weightKg, 'weightKg');
+  }
+  if (body.price !== undefined) {
+    patch.price = requirePositiveDecimal(body.price, 'price');
+  }
+  if (body.photoUrls !== undefined) {
+    patch.photoUrls = optionalUrlArray(body.photoUrls, 'photoUrls');
+  }
+  if (body.videoUrls !== undefined) {
+    patch.videoUrls = optionalUrlArray(body.videoUrls, 'videoUrls');
+  }
+  if (body.moisture !== undefined) {
+    patch.moisture = optionalString(body.moisture, 'moisture');
+  }
+  if (body.color !== undefined) {
+    patch.color = optionalString(body.color, 'color');
+  }
+  if (body.size !== undefined) {
+    patch.size = optionalString(body.size, 'size');
+  }
+  if (body.paymentTerms !== undefined) {
+    patch.paymentTerms = optionalString(body.paymentTerms, 'paymentTerms');
+  }
+  if (body.notes !== undefined) {
+    patch.notes = optionalString(body.notes, 'notes');
+  }
+  return patch;
+}
+
+function validateListingUpdateInput(side, body) {
+  if (body.side !== undefined && body.side !== side) {
+    throw new AppError('side is immutable', 400);
+  }
+  return side === 'BUY' ? validateBuyRequirementPatch(body) : validateSellListingPatch(body);
+}
+
+module.exports = {
+  validateBuyRequirementInput,
+  validateSellListingInput,
+  validateListingCreateInput,
+  validateListingUpdateInput,
+};
