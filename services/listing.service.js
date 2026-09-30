@@ -26,7 +26,8 @@ function toNumberOrNull(decimal) {
 }
 
 function serializeListing(listing) {
-  return { ...listing, price: toNumberOrNull(listing.price) };
+  const { createdAt, updatedAt, ...rest } = listing;
+  return { ...rest, price: toNumberOrNull(listing.price) };
 }
 
 // Combines the admin-configured price_expiry_time (HH:mm, Asia/Kolkata) with
@@ -69,6 +70,8 @@ async function createListing(userId, body) {
   const hasPrice = input.price !== null;
   const priceValidUntil = hasPrice ? await computeNextExpiryCutoff() : null;
 
+  // itemName is never client input on either side — commodityId already identifies
+  // the specific trademark/product, so it's always derived from commodity.name.
   const data =
     input.side === 'BUY'
       ? {
@@ -89,7 +92,7 @@ async function createListing(userId, body) {
           userId,
           categoryId: input.categoryId,
           commodityId: input.commodityId,
-          itemName: input.itemName,
+          itemName: commodity.name,
           quality: input.quality,
           quantityBags: input.quantityBags,
           availabilityBags: input.quantityBags,
@@ -107,7 +110,18 @@ async function createListing(userId, body) {
           priceValidUntil,
         };
 
-  const listing = await prisma.listing.create({ data });
+  let listing;
+  try {
+    listing = await prisma.listing.create({ data });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      throw new AppError(
+        'You already have a listing with this same category, commodity, weight and quality',
+        409
+      );
+    }
+    throw err;
+  }
   return serializeListing(listing);
 }
 
@@ -211,9 +225,9 @@ async function updateListing(id, userId, body) {
     const nextCategoryId = patch.categoryId ?? existing.categoryId;
     const nextCommodityId = patch.commodityId ?? existing.commodityId;
     const commodity = await fetchCategoryAndCommodity(nextCategoryId, nextCommodityId);
-    if (existing.side === 'BUY') {
-      patch.itemName = commodity.name;
-    }
+    // itemName always mirrors commodity.name, on both sides — re-derive it whenever
+    // the commodity changes.
+    patch.itemName = commodity.name;
   }
 
   const data = { ...patch };
@@ -222,7 +236,18 @@ async function updateListing(id, userId, body) {
     data.priceValidUntil = await computeNextExpiryCutoff();
   }
 
-  const updated = await prisma.listing.update({ where: { id }, data });
+  let updated;
+  try {
+    updated = await prisma.listing.update({ where: { id }, data });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      throw new AppError(
+        'You already have a listing with this same category, commodity, weight and quality',
+        409
+      );
+    }
+    throw err;
+  }
   return serializeListing(updated);
 }
 

@@ -60,6 +60,16 @@ enum ListingStatus {
   @@map("listing_status")
 }
 
+// Grain-size grading. Starting list per founder; more values added later as needed.
+enum QualityGrade {
+  barik
+  chota
+  mota
+  dardra
+
+  @@map("quality_grade")
+}
+
 enum NegotiationStatus {
   open
   closed
@@ -266,7 +276,7 @@ model Listing {
   categoryId       String        @map("category_id") @db.Uuid
   commodityId      String?       @map("commodity_id") @db.Uuid
   itemName         String        @map("item_name")
-  quality          String?
+  quality          QualityGrade?
   quantityBags     Int           @map("quantity_bags")
   availabilityBags Int           @map("availability_bags")
   weightKg         Int?          @map("weight_kg")
@@ -294,6 +304,9 @@ model Listing {
   @@index([side, categoryId, status, price], map: "ix_listing_browse")
   @@index([userId, status], map: "ix_listing_by_user")
   // Partial index ix_listing_active (status) WHERE status = 'active' added via raw SQL.
+  // Partial unique uq_listing_no_duplicate_sell (user_id, category_id, commodity_id,
+  // weight_kg, quality) WHERE side = 'SELL' AND status IN ('active','na','price_expired'),
+  // NULLS NOT DISTINCT, added via raw SQL in the migration.
   @@map("listing")
 }
 

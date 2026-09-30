@@ -2143,7 +2143,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"side\": \"SELL\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"commodityId\": \"{{commodityId}}\",\n  \"itemName\": \"Chitra Pila Badshah\",\n  \"quality\": \"Grade A\",\n  \"quantityBags\": 100,\n  \"weightKg\": 30,\n  \"price\": 2200,\n  \"photoUrls\": [\"https://example.com/photo1.jpg\"],\n  \"videoUrls\": [],\n  \"moisture\": \"12%\",\n  \"color\": \"Yellow\",\n  \"size\": \"Medium\",\n  \"paymentTerms\": \"15 days credit\",\n  \"notes\": \"Goods outward within 2 days of confirmation\"\n}"
+              "raw": "{\n  \"side\": \"SELL\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"commodityId\": \"{{commodityId}}\",\n  \"quality\": \"barik\",\n  \"quantityBags\": 100,\n  \"weightKg\": 30,\n  \"price\": 2200,\n  \"photoUrls\": [\"https://example.com/photo1.jpg\"],\n  \"videoUrls\": [],\n  \"moisture\": \"12%\",\n  \"color\": \"Yellow\",\n  \"size\": \"Medium\",\n  \"paymentTerms\": \"15 days credit\",\n  \"notes\": \"Goods outward within 2 days of confirmation\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/listings",
@@ -2169,7 +2169,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"side\": \"SELL\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"commodityId\": \"{{commodityId}}\",\n  \"itemName\": \"Chitra Pila Badshah\",\n  \"quantityBags\": 100\n}"
+              "raw": "{\n  \"side\": \"SELL\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"commodityId\": \"{{commodityId}}\",\n  \"quantityBags\": 100\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/listings",

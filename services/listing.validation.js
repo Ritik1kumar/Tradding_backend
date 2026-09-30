@@ -3,13 +3,9 @@ const { validateUuid } = require('../lib/validators');
 
 const URL_REGEX = /^https?:\/\/\S+$/i;
 const VALID_SIDES = ['SELL', 'BUY'];
-
-function requireString(value, fieldName) {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new AppError(`${fieldName} is required`, 400);
-  }
-  return value.trim();
-}
+// Mirrors the QualityGrade enum in schema.prisma. Starting list per founder —
+// more values will be added later, so keep this the single source of truth.
+const QUALITY_GRADES = ['barik', 'chota', 'mota', 'dardra'];
 
 function optionalString(value, fieldName) {
   if (value === undefined || value === null) {
@@ -59,6 +55,16 @@ function requirePositiveDecimal(value, fieldName) {
   return parsed;
 }
 
+function optionalEnum(value, allowedValues, fieldName) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (!allowedValues.includes(value)) {
+    throw new AppError(`${fieldName} must be one of: ${allowedValues.join(', ')}`, 400);
+  }
+  return value;
+}
+
 function optionalUrlArray(value, fieldName) {
   if (value === undefined || value === null) {
     return [];
@@ -91,12 +97,13 @@ function validateBuyRequirementInput(body) {
   };
 }
 
-// side = SELL (create): the full form.
+// side = SELL (create): the full form. itemName is NOT a client input — it's
+// derived server-side from the resolved commodity's name (see listing.service.js),
+// same as BUY, since commodityId already identifies the specific trademark/product.
 function validateSellListingInput(body) {
   return {
     ...validateListingIdentity(body),
-    itemName: requireString(body.itemName, 'itemName'),
-    quality: optionalString(body.quality, 'quality'),
+    quality: optionalEnum(body.quality, QUALITY_GRADES, 'quality'),
     quantityBags: requirePositiveInt(body.quantityBags, 'quantityBags'),
     weightKg: optionalPositiveInt(body.weightKg, 'weightKg'),
     price: optionalPositiveDecimal(body.price, 'price'),
@@ -147,11 +154,8 @@ function validateSellListingPatch(body) {
   if (body.commodityId !== undefined) {
     patch.commodityId = validateUuid(body.commodityId, 'commodityId');
   }
-  if (body.itemName !== undefined) {
-    patch.itemName = requireString(body.itemName, 'itemName');
-  }
   if (body.quality !== undefined) {
-    patch.quality = optionalString(body.quality, 'quality');
+    patch.quality = optionalEnum(body.quality, QUALITY_GRADES, 'quality');
   }
   if (body.quantityBags !== undefined) {
     patch.quantityBags = requirePositiveInt(body.quantityBags, 'quantityBags');
