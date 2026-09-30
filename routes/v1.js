@@ -10,6 +10,7 @@ var tosRouter = require('./tos');
 var commodityCategoriesRouter = require('./commodityCategories');
 var commoditiesRouter = require('./commodities');
 var settingsRouter = require('./settings');
+var listingsRouter = require('./listings');
 
 router.use('/invites', invitesRouter);
 router.use('/auth', authRouter);
@@ -18,6 +19,7 @@ router.use('/tos', tosRouter);
 router.use('/commodity-categories', commodityCategoriesRouter);
 router.use('/commodities', commoditiesRouter);
 router.use('/settings', settingsRouter);
+router.use('/listings', listingsRouter);
 
 router.use((req, res, next) => next(new AppError('Not found', 404)));
 router.use(errorHandler);
