@@ -350,4 +350,6 @@ module.exports = {
   bulkUpdatePrice,
   withdrawListing,
   computeNextExpiryCutoff,
+  // Exported for reuse by listing-bulk.service.js.
+  fetchCategoryAndCommodity,
 };

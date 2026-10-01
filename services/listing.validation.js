@@ -5,7 +5,24 @@ const URL_REGEX = /^https?:\/\/\S+$/i;
 const VALID_SIDES = ['SELL', 'BUY'];
 // Mirrors the QualityGrade enum in schema.prisma. Starting list per founder —
 // more values will be added later, so keep this the single source of truth.
-const QUALITY_GRADES = ['barik', 'chota', 'mota', 'dardra'];
+const QUALITY_GRADES = [
+  'barik',
+  'chota',
+  'mota',
+  'dardra',
+  'small',
+  'bold',
+  'normal',
+  'dry',
+  'full_green',
+  'medium',
+  'standard',
+  'madras',
+  'imported',
+  'stream',
+  'sella',
+  'parmal',
+];
 
 function optionalString(value, fieldName) {
   if (value === undefined || value === null) {
@@ -112,7 +129,7 @@ function validateSellListingInput(body) {
     moisture: optionalString(body.moisture, 'moisture'),
     color: optionalString(body.color, 'color'),
     size: optionalString(body.size, 'size'),
-    paymentTerms: optionalString(body.paymentTerms, 'paymentTerms'),
+    paymentTerms: optionalPositiveInt(body.paymentTerms, 'paymentTerms'),
     notes: optionalString(body.notes, 'notes'),
   };
 }
@@ -182,7 +199,7 @@ function validateSellListingPatch(body) {
     patch.size = optionalString(body.size, 'size');
   }
   if (body.paymentTerms !== undefined) {
-    patch.paymentTerms = optionalString(body.paymentTerms, 'paymentTerms');
+    patch.paymentTerms = optionalPositiveInt(body.paymentTerms, 'paymentTerms');
   }
   if (body.notes !== undefined) {
     patch.notes = optionalString(body.notes, 'notes');
@@ -202,4 +219,12 @@ module.exports = {
   validateSellListingInput,
   validateListingCreateInput,
   validateListingUpdateInput,
+  // Exported for reuse by listing-bulk.service.js — same per-field rules,
+  // applied there row-by-row against parsed Excel cells (see that file).
+  QUALITY_GRADES,
+  optionalString,
+  requirePositiveInt,
+  optionalPositiveInt,
+  optionalPositiveDecimal,
+  optionalEnum,
 };

@@ -66,6 +66,18 @@ enum QualityGrade {
   chota
   mota
   dardra
+  small
+  bold
+  normal
+  dry
+  full_green
+  medium
+  standard
+  madras
+  imported
+  stream
+  sella
+  parmal
 
   @@map("quality_grade")
 }
@@ -154,7 +166,7 @@ model AppUser {
   firmName            String?    @map("firm_name")
   roles               RoleType[] @default([])
   city                String?
-  defaultPaymentTerms String?    @map("default_payment_terms")
+  defaultPaymentTerms Int?       @map("default_payment_terms")
   firmNotes           String?    @map("firm_notes")
   defaultWeightKg     Int?       @map("default_weight_kg")
   tosAcceptedVersion  Int?       @map("tos_accepted_version")
@@ -287,7 +299,7 @@ model Listing {
   moisture         String?
   color            String?
   size             String?
-  paymentTerms     String?       @map("payment_terms")
+  paymentTerms     Int?          @map("payment_terms")
   notes            String?
   status           ListingStatus @default(active)
   priceValidUntil  DateTime?     @map("price_valid_until") @db.Timestamptz(6)
