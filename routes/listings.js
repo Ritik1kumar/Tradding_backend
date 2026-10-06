@@ -27,7 +27,7 @@ var upload = multer({
 
 // Wraps multer so file-too-large / wrong-mimetype errors reach errorHandler as a
 // clean 400 instead of an unhandled 500 (multer's own errors aren't AppErrors).
-function handleTemplateUpload(req, res, next) {
+function handleBulkUploadFile(req, res, next) {
   upload.single('file')(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return next(new AppError(err.message, 400));
@@ -50,7 +50,7 @@ router.get('/:id', listingController.getById);
 router.patch('/bulk-price', listingController.bulkPrice);
 router.patch('/:id/withdraw', listingController.withdraw);
 router.patch('/:id', listingController.update);
-router.post('/bulk-upload', handleTemplateUpload, listingBulkController.bulkUpload);
+router.post('/bulk-upload', handleBulkUploadFile, listingBulkController.bulkUpload);
 router.post('/bulk-confirm', listingBulkController.bulkConfirm);
 
 module.exports = router;

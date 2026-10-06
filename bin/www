@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('tradding:server');
 var http = require('http');
+var priceExpiryJob = require('../jobs/priceExpiryJob');
 
 /**
  * Get port from environment and store in Express.
@@ -87,5 +88,6 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   console.log('Listening on ' + bind);
+  priceExpiryJob.start();
 }
 
