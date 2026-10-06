@@ -1,0 +1,3103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Listing E2E Report</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 24px; background: #f5f6f8; color: #1a1a1a; }
+  h1 { margin-bottom: 4px; }
+  .meta { color: #555; font-size: 14px; margin-bottom: 20px; }
+  .summary-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .stat { background: white; border-radius: 8px; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 100px; text-align: center; }
+  .stat .n { font-size: 28px; font-weight: 700; display: block; }
+  .stat.total .n { color: #333; }
+  .stat.passed .n { color: #1a7f37; }
+  .stat.failed .n { color: #c91e2e; }
+  .stat.skipped .n { color: #9a6700; }
+  section { background: white; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #fafafa; position: sticky; top: 0; }
+  tr.pass td.status { color: #1a7f37; font-weight: 700; }
+  tr.fail td.status { color: #c91e2e; font-weight: 700; }
+  tr.fail { background: #fff5f5; }
+  tr.skip td.status { color: #9a6700; font-weight: 700; }
+  code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 12px; word-break: break-word; }
+  .fail-detail { margin-top: 6px; font-size: 12px; color: #7a1f1f; background: #ffecec; padding: 6px 8px; border-radius: 4px; }
+  .bug { border-left: 4px solid #c91e2e; padding: 8px 12px; margin-bottom: 12px; background: #fff8f8; border-radius: 0 6px 6px 0; }
+  .bug-medium { border-color: #9a6700; background: #fffbea; }
+  .bug-low { border-color: #777; background: #fafafa; }
+  .bug h4 { margin: 0 0 6px; }
+  .exec-summary { font-size: 15px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h1>Listing Module — E2E Test Report</h1>
+  <div class="meta">
+    Run at 2026-10-06T07:36:17.263Z · DB: <code>localhost:5432/tradding_db</code> · Git commit: <code>765cf73</code> ·
+    Duration: 6205 ms · Node v24.21.0
+  </div>
+
+  <div class="summary-grid">
+    <div class="stat total"><span class="n">332</span>Total</div>
+    <div class="stat passed"><span class="n">329</span>Passed</div>
+    <div class="stat failed"><span class="n">3</span>Failed</div>
+    <div class="stat skipped"><span class="n">0</span>Skipped</div>
+  </div>
+
+  <section>
+    <h3>Executive summary</h3>
+    <div class="exec-summary">329/332 checks passed, 3 FAILED (VIS-SORT-BUY-NEWEST-FIRST, CONCURRENCY-10-PARALLEL-DELTA, BULKUPLOAD-NA-PRICE-TEXT), 0 skipped. See the per-section tables and "Bugs found" below for exact repro steps before changing any code.</div>
+  </section>
+
+  <section>
+    <h3>Coverage matrix — business rules</h3>
+    <table>
+    <thead><tr><th>Business rule</th><th>Covered by</th><th>Status</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>1. SELL w/o price -&gt; na; BUY w/o price -&gt; active</td>
+        <td>CREATE-SELL-, CREATE-BUY-</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>2. BUY minimal fields (categoryId, commodityId, price?, quantityBags)</td>
+        <td>CREATE-BUY-</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>3. Unknown/non-applicable fields stripped, not 400</td>
+        <td>CREATE-STRIP-01</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>4. Only owner can PATCH / withdraw</td>
+        <td>UPDATE-02, WITHDRAW-NONOWNER-BLOCKED</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>5. Withdraw is a soft close, row retained</td>
+        <td>WITHDRAW-OWNER-OK</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>6. Bulk price: delta(all/selected) + set-many, skip semantics</td>
+        <td>BULK-DELTA-ALL-01, BULK-DELTA-SELECTED-01, BULK-SETMANY-01</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>7. Successful price edit sets status back to active</td>
+        <td>UPDATE-01, UPDATE-03, UPDATE-04</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>8. 2 AM expiry flips status only, price untouched, row kept</td>
+        <td>EXPIRY-RUN</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>9. Browse filters + sort (SELL cheapest-first, BUY newest-first)</td>
+        <td>VIS-SORT-SELL-CHEAPEST-FIRST, VIS-SORT-BUY-NEWEST-FIRST</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="fail">
+        <td>10. Self-trade guard / negotiation</td>
+        <td>—</td>
+        <td class="status">NO COVERAGE</td>
+      </tr>
+<tr class="pass">
+        <td>11. userId filter open, but non-active status on someone else's listings requires owner/admin</td>
+        <td>VIS-OTHER-NONACTIVE-BLOCKED, VIS-ADMIN-SEES-ANY-STATUS</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>12. ToS gate blocks gated endpoints until accepted (tos.js/tosVersions.js exempt)</td>
+        <td>TOSGATE-BLOCKED-PREACCEPT, TOSGATE-UNBLOCKED-POSTACCEPT</td>
+        <td class="status">COVERED</td>
+      </tr>
+<tr class="pass">
+        <td>13. Bulk upload/confirm: fuzzy-match never auto-applied, duplicate combo updates in place</td>
+        <td>BULKUPLOAD-PARSE, BULKUPLOAD-REUPLOAD-UPDATES-NOT-DUPLICATES</td>
+        <td class="status">COVERED</td>
+      </tr></tbody>
+  </table>
+  </section>
+
+  <section>
+      <h3>Bootstrap</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>BOOT-01</td>
+        <td>Admin logs in (reuses existing seeded admin +919810000001)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-02</td>
+        <td>Admin accepts current ToS version so gated endpoints are usable</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-CAT-Rajma</td>
+        <td>Admin creates category "QA_Rajma"</td>
+        <td>POST /api/v1/commodity-categories</td>
+        <td>201</td>
+        <td><code>{"name":"QA_Rajma"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Chitra Pila Badshah</td>
+        <td>Admin creates commodity "QA Chitra Pila Badshah" under QA_Rajma</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","name":"QA Chitra Pila Badshah"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Rajma Lal Premium</td>
+        <td>Admin creates commodity "QA Rajma Lal Premium" under QA_Rajma</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","name":"QA Rajma Lal Premium"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Rajma Chitra Light</td>
+        <td>Admin creates commodity "QA Rajma Chitra Light" under QA_Rajma</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","name":"QA Rajma Chitra Light"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-CAT-Chana</td>
+        <td>Admin creates category "QA_Chana"</td>
+        <td>POST /api/v1/commodity-categories</td>
+        <td>201</td>
+        <td><code>{"name":"QA_Chana"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Kabli Chana Bold</td>
+        <td>Admin creates commodity "QA Kabli Chana Bold" under QA_Chana</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","name":"QA Kabli Chana Bold"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Chana Dal Standard</td>
+        <td>Admin creates commodity "QA Chana Dal Standard" under QA_Chana</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","name":"QA Chana Dal Standard"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Garbanzo Dry White</td>
+        <td>Admin creates commodity "QA Garbanzo Dry White" under QA_Chana</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","name":"QA Garbanzo Dry White"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-CAT-Urad Dal</td>
+        <td>Admin creates category "QA_Urad Dal"</td>
+        <td>POST /api/v1/commodity-categories</td>
+        <td>201</td>
+        <td><code>{"name":"QA_Urad Dal"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Urad Sabut Black</td>
+        <td>Admin creates commodity "QA Urad Sabut Black" under QA_Urad Dal</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","name":"QA Urad Sabut Black"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Urad Dhowa White</td>
+        <td>Admin creates commodity "QA Urad Dhowa White" under QA_Urad Dal</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","name":"QA Urad Dhowa White"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Urad Dal Split</td>
+        <td>Admin creates commodity "QA Urad Dal Split" under QA_Urad Dal</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","name":"QA Urad Dal Split"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-CAT-Besan</td>
+        <td>Admin creates category "QA_Besan"</td>
+        <td>POST /api/v1/commodity-categories</td>
+        <td>201</td>
+        <td><code>{"name":"QA_Besan"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Besan Fine</td>
+        <td>Admin creates commodity "QA Besan Fine" under QA_Besan</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","name":"QA Besan Fine"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Besan Coarse</td>
+        <td>Admin creates commodity "QA Besan Coarse" under QA_Besan</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","name":"QA Besan Coarse"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-COM-QA Besan Premium</td>
+        <td>Admin creates commodity "QA Besan Premium" under QA_Besan</td>
+        <td>POST /api/v1/commodities</td>
+        <td>201</td>
+        <td><code>{"categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","name":"QA Besan Premium"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-01</td>
+        <td>Admin invites +917000910001 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910001","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-01</td>
+        <td>+917000910001 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-01</td>
+        <td>+917000910001 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-02</td>
+        <td>Admin invites +917000910002 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910002","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-02</td>
+        <td>+917000910002 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-02</td>
+        <td>+917000910002 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-03</td>
+        <td>Admin invites +917000910003 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910003","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-03</td>
+        <td>+917000910003 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-03</td>
+        <td>+917000910003 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-04</td>
+        <td>Admin invites +917000910004 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910004","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-04</td>
+        <td>+917000910004 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-04</td>
+        <td>+917000910004 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-05</td>
+        <td>Admin invites +917000910005 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910005","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-05</td>
+        <td>+917000910005 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-05</td>
+        <td>+917000910005 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-06</td>
+        <td>Admin invites +917000910006 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910006","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-06</td>
+        <td>+917000910006 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-06</td>
+        <td>+917000910006 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-07</td>
+        <td>Admin invites +917000910007 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910007","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-07</td>
+        <td>+917000910007 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-07</td>
+        <td>+917000910007 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-08</td>
+        <td>Admin invites +917000910008 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910008","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-08</td>
+        <td>+917000910008 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-08</td>
+        <td>+917000910008 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-09</td>
+        <td>Admin invites +917000910009 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910009","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-09</td>
+        <td>+917000910009 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-09</td>
+        <td>+917000910009 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-10</td>
+        <td>Admin invites +917000910010 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910010","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-10</td>
+        <td>+917000910010 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-10</td>
+        <td>+917000910010 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-11</td>
+        <td>Admin invites +917000910011 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910011","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-11</td>
+        <td>+917000910011 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-11</td>
+        <td>+917000910011 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-12</td>
+        <td>Admin invites +917000910012 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910012","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-12</td>
+        <td>+917000910012 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-12</td>
+        <td>+917000910012 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-13</td>
+        <td>Admin invites +917000910013 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910013","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-13</td>
+        <td>+917000910013 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-13</td>
+        <td>+917000910013 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-14</td>
+        <td>Admin invites +917000910014 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910014","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-14</td>
+        <td>+917000910014 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-14</td>
+        <td>+917000910014 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-SELLER-15</td>
+        <td>Admin invites +917000910015 as seller</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000910015","roleHint":"seller"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-SELLER-15</td>
+        <td>+917000910015 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-SELLER-15</td>
+        <td>+917000910015 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-01</td>
+        <td>Admin invites +917000920001 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920001","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-01</td>
+        <td>+917000920001 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-01</td>
+        <td>+917000920001 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-02</td>
+        <td>Admin invites +917000920002 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920002","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-02</td>
+        <td>+917000920002 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-02</td>
+        <td>+917000920002 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-03</td>
+        <td>Admin invites +917000920003 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920003","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-03</td>
+        <td>+917000920003 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-03</td>
+        <td>+917000920003 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-04</td>
+        <td>Admin invites +917000920004 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920004","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-04</td>
+        <td>+917000920004 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-04</td>
+        <td>+917000920004 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-05</td>
+        <td>Admin invites +917000920005 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920005","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-05</td>
+        <td>+917000920005 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-05</td>
+        <td>+917000920005 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-06</td>
+        <td>Admin invites +917000920006 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920006","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-06</td>
+        <td>+917000920006 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-06</td>
+        <td>+917000920006 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-07</td>
+        <td>Admin invites +917000920007 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920007","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-07</td>
+        <td>+917000920007 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-07</td>
+        <td>+917000920007 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-08</td>
+        <td>Admin invites +917000920008 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920008","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-08</td>
+        <td>+917000920008 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-08</td>
+        <td>+917000920008 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-09</td>
+        <td>Admin invites +917000920009 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920009","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-09</td>
+        <td>+917000920009 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-09</td>
+        <td>+917000920009 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-INV-BUYER-10</td>
+        <td>Admin invites +917000920010 as buyer</td>
+        <td>POST /api/v1/invites</td>
+        <td>201</td>
+        <td><code>{"phone":"+917000920010","roleHint":"buyer"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-LOGIN-BUYER-10</td>
+        <td>+917000920010 logs in via invite + OTP (creates AppUser)</td>
+        <td>POST /api/v1/auth/verify-otp</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BOOT-TOS-BUYER-10</td>
+        <td>+917000920010 accepts current ToS (if any is published)</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Create</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>CREATE-SELL-+917000910001-0</td>
+        <td>Seller +917000910001 creates SELL listing (QA Chitra Pila Badshah, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910001-1</td>
+        <td>Seller +917000910001 creates SELL listing (QA Rajma Lal Premium, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910001-2</td>
+        <td>Seller +917000910001 creates SELL listing (QA Rajma Chitra Light, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910001-3</td>
+        <td>Seller +917000910001 creates SELL listing (QA Kabli Chana Bold, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910001-4</td>
+        <td>Seller +917000910001 creates SELL listing (QA Chana Dal Standard, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-0</td>
+        <td>Seller +917000910002 creates SELL listing (QA Rajma Lal Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-1</td>
+        <td>Seller +917000910002 creates SELL listing (QA Rajma Chitra Light, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-2</td>
+        <td>Seller +917000910002 creates SELL listing (QA Kabli Chana Bold, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-3</td>
+        <td>Seller +917000910002 creates SELL listing (QA Chana Dal Standard, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-4</td>
+        <td>Seller +917000910002 creates SELL listing (QA Garbanzo Dry White, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910002-5</td>
+        <td>Seller +917000910002 creates SELL listing (QA Urad Sabut Black, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-0</td>
+        <td>Seller +917000910003 creates SELL listing (QA Rajma Chitra Light, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-1</td>
+        <td>Seller +917000910003 creates SELL listing (QA Kabli Chana Bold, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-2</td>
+        <td>Seller +917000910003 creates SELL listing (QA Chana Dal Standard, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-3</td>
+        <td>Seller +917000910003 creates SELL listing (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-4</td>
+        <td>Seller +917000910003 creates SELL listing (QA Urad Sabut Black, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-5</td>
+        <td>Seller +917000910003 creates SELL listing (QA Urad Dhowa White, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910003-6</td>
+        <td>Seller +917000910003 creates SELL listing (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-0</td>
+        <td>Seller +917000910004 creates SELL listing (QA Kabli Chana Bold, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-1</td>
+        <td>Seller +917000910004 creates SELL listing (QA Chana Dal Standard, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-2</td>
+        <td>Seller +917000910004 creates SELL listing (QA Garbanzo Dry White, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-3</td>
+        <td>Seller +917000910004 creates SELL listing (QA Urad Sabut Black, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-4</td>
+        <td>Seller +917000910004 creates SELL listing (QA Urad Dhowa White, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-5</td>
+        <td>Seller +917000910004 creates SELL listing (QA Urad Dal Split, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-6</td>
+        <td>Seller +917000910004 creates SELL listing (QA Besan Fine, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910004-7</td>
+        <td>Seller +917000910004 creates SELL listing (QA Besan Coarse, price=1059)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"sella","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910005-0</td>
+        <td>Seller +917000910005 creates SELL listing (QA Chana Dal Standard, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910005-1</td>
+        <td>Seller +917000910005 creates SELL listing (QA Garbanzo Dry White, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910005-2</td>
+        <td>Seller +917000910005 creates SELL listing (QA Urad Sabut Black, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910005-3</td>
+        <td>Seller +917000910005 creates SELL listing (QA Urad Dhowa White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910005-4</td>
+        <td>Seller +917000910005 creates SELL listing (QA Urad Dal Split, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-0</td>
+        <td>Seller +917000910006 creates SELL listing (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-1</td>
+        <td>Seller +917000910006 creates SELL listing (QA Urad Sabut Black, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-2</td>
+        <td>Seller +917000910006 creates SELL listing (QA Urad Dhowa White, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-3</td>
+        <td>Seller +917000910006 creates SELL listing (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-4</td>
+        <td>Seller +917000910006 creates SELL listing (QA Besan Fine, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910006-5</td>
+        <td>Seller +917000910006 creates SELL listing (QA Besan Coarse, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-0</td>
+        <td>Seller +917000910007 creates SELL listing (QA Urad Sabut Black, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-1</td>
+        <td>Seller +917000910007 creates SELL listing (QA Urad Dhowa White, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-2</td>
+        <td>Seller +917000910007 creates SELL listing (QA Urad Dal Split, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-3</td>
+        <td>Seller +917000910007 creates SELL listing (QA Besan Fine, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-4</td>
+        <td>Seller +917000910007 creates SELL listing (QA Besan Coarse, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-5</td>
+        <td>Seller +917000910007 creates SELL listing (QA Besan Premium, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910007-6</td>
+        <td>Seller +917000910007 creates SELL listing (QA Chitra Pila Badshah, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-0</td>
+        <td>Seller +917000910008 creates SELL listing (QA Urad Dhowa White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-1</td>
+        <td>Seller +917000910008 creates SELL listing (QA Urad Dal Split, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-2</td>
+        <td>Seller +917000910008 creates SELL listing (QA Besan Fine, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-3</td>
+        <td>Seller +917000910008 creates SELL listing (QA Besan Coarse, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-4</td>
+        <td>Seller +917000910008 creates SELL listing (QA Besan Premium, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-5</td>
+        <td>Seller +917000910008 creates SELL listing (QA Chitra Pila Badshah, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-6</td>
+        <td>Seller +917000910008 creates SELL listing (QA Rajma Lal Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910008-7</td>
+        <td>Seller +917000910008 creates SELL listing (QA Rajma Chitra Light, price=1059)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"sella","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910009-0</td>
+        <td>Seller +917000910009 creates SELL listing (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910009-1</td>
+        <td>Seller +917000910009 creates SELL listing (QA Besan Fine, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910009-2</td>
+        <td>Seller +917000910009 creates SELL listing (QA Besan Coarse, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910009-3</td>
+        <td>Seller +917000910009 creates SELL listing (QA Besan Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910009-4</td>
+        <td>Seller +917000910009 creates SELL listing (QA Chitra Pila Badshah, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-0</td>
+        <td>Seller +917000910010 creates SELL listing (QA Besan Fine, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-1</td>
+        <td>Seller +917000910010 creates SELL listing (QA Besan Coarse, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-2</td>
+        <td>Seller +917000910010 creates SELL listing (QA Besan Premium, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-3</td>
+        <td>Seller +917000910010 creates SELL listing (QA Chitra Pila Badshah, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-4</td>
+        <td>Seller +917000910010 creates SELL listing (QA Rajma Lal Premium, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910010-5</td>
+        <td>Seller +917000910010 creates SELL listing (QA Rajma Chitra Light, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-0</td>
+        <td>Seller +917000910011 creates SELL listing (QA Besan Coarse, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-1</td>
+        <td>Seller +917000910011 creates SELL listing (QA Besan Premium, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-2</td>
+        <td>Seller +917000910011 creates SELL listing (QA Chitra Pila Badshah, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-3</td>
+        <td>Seller +917000910011 creates SELL listing (QA Rajma Lal Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-4</td>
+        <td>Seller +917000910011 creates SELL listing (QA Rajma Chitra Light, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-5</td>
+        <td>Seller +917000910011 creates SELL listing (QA Kabli Chana Bold, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910011-6</td>
+        <td>Seller +917000910011 creates SELL listing (QA Chana Dal Standard, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-0</td>
+        <td>Seller +917000910012 creates SELL listing (QA Besan Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-1</td>
+        <td>Seller +917000910012 creates SELL listing (QA Chitra Pila Badshah, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-2</td>
+        <td>Seller +917000910012 creates SELL listing (QA Rajma Lal Premium, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-3</td>
+        <td>Seller +917000910012 creates SELL listing (QA Rajma Chitra Light, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-4</td>
+        <td>Seller +917000910012 creates SELL listing (QA Kabli Chana Bold, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-5</td>
+        <td>Seller +917000910012 creates SELL listing (QA Chana Dal Standard, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-6</td>
+        <td>Seller +917000910012 creates SELL listing (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910012-7</td>
+        <td>Seller +917000910012 creates SELL listing (QA Urad Sabut Black, price=1059)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"sella","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910013-0</td>
+        <td>Seller +917000910013 creates SELL listing (QA Chitra Pila Badshah, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910013-1</td>
+        <td>Seller +917000910013 creates SELL listing (QA Rajma Lal Premium, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910013-2</td>
+        <td>Seller +917000910013 creates SELL listing (QA Rajma Chitra Light, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910013-3</td>
+        <td>Seller +917000910013 creates SELL listing (QA Kabli Chana Bold, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910013-4</td>
+        <td>Seller +917000910013 creates SELL listing (QA Chana Dal Standard, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-0</td>
+        <td>Seller +917000910014 creates SELL listing (QA Rajma Lal Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-1</td>
+        <td>Seller +917000910014 creates SELL listing (QA Rajma Chitra Light, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-2</td>
+        <td>Seller +917000910014 creates SELL listing (QA Kabli Chana Bold, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-3</td>
+        <td>Seller +917000910014 creates SELL listing (QA Chana Dal Standard, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-4</td>
+        <td>Seller +917000910014 creates SELL listing (QA Garbanzo Dry White, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910014-5</td>
+        <td>Seller +917000910014 creates SELL listing (QA Urad Sabut Black, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-0</td>
+        <td>Seller +917000910015 creates SELL listing (QA Rajma Chitra Light, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-1</td>
+        <td>Seller +917000910015 creates SELL listing (QA Kabli Chana Bold, price=837)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quality":"mota","quantityBags…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-2</td>
+        <td>Seller +917000910015 creates SELL listing (QA Chana Dal Standard, price=874)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quality":"small","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-3</td>
+        <td>Seller +917000910015 creates SELL listing (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quality":"normal","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-4</td>
+        <td>Seller +917000910015 creates SELL listing (QA Urad Sabut Black, price=948)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quality":"full_green","quanti…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-5</td>
+        <td>Seller +917000910015 creates SELL listing (QA Urad Dhowa White, price=985)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quality":"standard","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-SELL-+917000910015-6</td>
+        <td>Seller +917000910015 creates SELL listing (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quality":"imported","quantity…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920001-0</td>
+        <td>Buyer +917000920001 creates BUY requirement (QA Chitra Pila Badshah, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920001-1</td>
+        <td>Buyer +917000920001 creates BUY requirement (QA Rajma Lal Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920002-0</td>
+        <td>Buyer +917000920002 creates BUY requirement (QA Rajma Lal Premium, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"4b359055-2ecc-433f-b37b-d969c852c453","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920002-1</td>
+        <td>Buyer +917000920002 creates BUY requirement (QA Rajma Chitra Light, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920002-2</td>
+        <td>Buyer +917000920002 creates BUY requirement (QA Kabli Chana Bold, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920003-0</td>
+        <td>Buyer +917000920003 creates BUY requirement (QA Rajma Chitra Light, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"e0e5882f-fdd0-44fc-9def-8da7ed651bb4","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920003-1</td>
+        <td>Buyer +917000920003 creates BUY requirement (QA Kabli Chana Bold, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920003-2</td>
+        <td>Buyer +917000920003 creates BUY requirement (QA Chana Dal Standard, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920003-3</td>
+        <td>Buyer +917000920003 creates BUY requirement (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quantityBags":23,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920004-0</td>
+        <td>Buyer +917000920004 creates BUY requirement (QA Kabli Chana Bold, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920004-1</td>
+        <td>Buyer +917000920004 creates BUY requirement (QA Chana Dal Standard, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920005-0</td>
+        <td>Buyer +917000920005 creates BUY requirement (QA Chana Dal Standard, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"421c83d0-45d6-4186-a1a3-fe7254d22c42","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920005-1</td>
+        <td>Buyer +917000920005 creates BUY requirement (QA Garbanzo Dry White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920005-2</td>
+        <td>Buyer +917000920005 creates BUY requirement (QA Urad Sabut Black, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920006-0</td>
+        <td>Buyer +917000920006 creates BUY requirement (QA Garbanzo Dry White, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","commodityId":"9eb6aab8-ea38-4958-9f0c-2832a4729c6a","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920006-1</td>
+        <td>Buyer +917000920006 creates BUY requirement (QA Urad Sabut Black, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920006-2</td>
+        <td>Buyer +917000920006 creates BUY requirement (QA Urad Dhowa White, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920006-3</td>
+        <td>Buyer +917000920006 creates BUY requirement (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quantityBags":23,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920007-0</td>
+        <td>Buyer +917000920007 creates BUY requirement (QA Urad Sabut Black, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"a02f3af5-6ae8-417f-9937-5780e5d14fa9","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920007-1</td>
+        <td>Buyer +917000920007 creates BUY requirement (QA Urad Dhowa White, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920008-0</td>
+        <td>Buyer +917000920008 creates BUY requirement (QA Urad Dhowa White, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"4e2672ef-2c78-4bd3-ba44-1119ddb4f844","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920008-1</td>
+        <td>Buyer +917000920008 creates BUY requirement (QA Urad Dal Split, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920008-2</td>
+        <td>Buyer +917000920008 creates BUY requirement (QA Besan Fine, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920009-0</td>
+        <td>Buyer +917000920009 creates BUY requirement (QA Urad Dal Split, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"33afdf48-f842-413e-b1b9-b88104d02192","commodityId":"900d3cfd-93da-4dd9-b04e-c04dae38f4e4","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920009-1</td>
+        <td>Buyer +917000920009 creates BUY requirement (QA Besan Fine, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920009-2</td>
+        <td>Buyer +917000920009 creates BUY requirement (QA Besan Coarse, price=946)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quantityBags":22,"price":946,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920009-3</td>
+        <td>Buyer +917000920009 creates BUY requirement (QA Besan Premium, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quantityBags":23,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920010-0</td>
+        <td>Buyer +917000920010 creates BUY requirement (QA Besan Fine, price=900)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"68e143a1-71ba-46d2-bdcc-0ffa382c9824","quantityBags":20,"price":900,"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-BUY-+917000920010-1</td>
+        <td>Buyer +917000920010 creates BUY requirement (QA Besan Coarse, price=none)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"BUY","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"14fc7b52-15f9-431f-8f0b-0c2670f29796","quantityBags":21,"quality":"bo…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-STRIP-01</td>
+        <td>Client-supplied userId/status/availabilityBags/itemName are ignored on create</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"cf43bb67-2bd3-4e00-9d9d-eafcaf595883","commodityId":"9c5ae3a4-82e2-47ca-98d2-1ba0fe69d11f","quality":"medium","quantityBa…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-missing-categoryId</td>
+        <td>Missing categoryId -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-missing-commodityId</td>
+        <td>Missing commodityId -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-missing-quantityBags</td>
+        <td>Missing quantityBags -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-price-zero</td>
+        <td>price &lt;= 0 -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5,"price":0}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-price-string</td>
+        <td>price as a non-numeric string -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5,"price":"abc"…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-nonexistent-commodity</td>
+        <td>Nonexistent commodityId -&gt; 404</td>
+        <td>POST /api/v1/listings</td>
+        <td>404</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"1ef9c37c-9cc9-438d-8401-b61e18d0b051","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-category-commodity-mismatch</td>
+        <td>commodityId belongs to a different category -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-side-missing</td>
+        <td>side missing -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-side-invalid</td>
+        <td>side invalid value -&gt; 400</td>
+        <td>POST /api/v1/listings</td>
+        <td>400</td>
+        <td><code>{"side":"RENT","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-no-token</td>
+        <td>No auth token -&gt; 401</td>
+        <td>POST /api/v1/listings</td>
+        <td>401</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-invalid-token</td>
+        <td>Garbage auth token -&gt; 401</td>
+        <td>POST /api/v1/listings</td>
+        <td>401</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>CREATE-NEG-duplicate-sell</td>
+        <td>Duplicate SELL (same user/category/commodity/weight/quality) -&gt; 409</td>
+        <td>POST /api/v1/listings</td>
+        <td>409</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quality":"barik","quantityBag…</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Update</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>UPDATE-01</td>
+        <td>Owner updates price/quality/weightKg/notes; DB row matches response</td>
+        <td>PATCH /api/v1/listings/41f71d5e-8693-4b32-8d44-03128ce623d9</td>
+        <td>200</td>
+        <td><code>{"price":1555,"quality":"bold","weightKg":35,"notes":"QA updated note"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>UPDATE-02</td>
+        <td>Non-owner PATCH on seller A's listing -&gt; 403, row unchanged</td>
+        <td>PATCH /api/v1/listings/41f71d5e-8693-4b32-8d44-03128ce623d9</td>
+        <td>403</td>
+        <td><code>{"price":1,"notes":"should not apply"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>UPDATE-03</td>
+        <td>Price edit on an "na" (never-priced) listing -&gt; status becomes active</td>
+        <td>PATCH /api/v1/listings/eac61aac-89d2-4914-93f9-53c948c13576</td>
+        <td>200</td>
+        <td><code>{"price":777}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>UPDATE-04</td>
+        <td>Price edit on a price_expired listing -&gt; status becomes active again</td>
+        <td>PATCH /api/v1/listings/032fe799-e5a0-49c7-be2e-12d19af9d514</td>
+        <td>200</td>
+        <td><code>{"price":958}</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>BulkPrice</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>BULK-DELTA-ALL-01</td>
+        <td>delta without listingIds applies to ALL of the caller's own editable listings</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","value":50}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-DELTA-ALL-02</td>
+        <td>delta-ALL also reprices a price_expired listing and flips it back to active</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","value":25}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-DELTA-SELECTED-01</td>
+        <td>delta with explicit listingIds (+50) only touches the selected ones</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","listingIds":["39de7e1c-5d59-486a-8367-629c8227dc2c"],"value":50}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-DELTA-SELECTED-02</td>
+        <td>delta with explicit listingIds (-50) computes from the sticky price</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","listingIds":["8a04a241-027d-42c9-9b68-363e143d91b4"],"value":-50}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-DELTA-NEGATIVE-GUARD</td>
+        <td>delta that would push price &lt;= 0 is skipped, price stays unchanged and never negative</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","listingIds":["ff352c15-9b8c-4b99-9cef-7be7e85d25fe"],"value":-1000}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-SETMANY-01</td>
+        <td>set-many applies a distinct price per listing in a single call</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"set-many","updates":[{"listingId":"b2667404-2b4e-47e3-a785-974c4d048b81","price":1200},{"listingId":"a017aa60-ddcd-42c6-a239-60582ea4e216","p…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-SETMANY-DUPLICATE</td>
+        <td>set-many with a duplicate listingId: last entry in the array wins</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"set-many","updates":[{"listingId":"622649f9-96cc-44d4-965f-dc0269893269","price":111},{"listingId":"622649f9-96cc-44d4-965f-dc0269893269","pr…</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-CROSS-USER-GUARD</td>
+        <td>Another user's listingId mixed into my bulk request is skipped, not modified</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","listingIds":["18dcca23-b374-4f01-b058-9bad2b96e864","18e5063e-9f99-4d68-830c-005caea2d5eb"],"value":10}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-ISOLATION-SNAPSHOT</td>
+        <td>delta-ALL for one seller doesn't change any other user's prices</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"delta","value":1}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-NEG-invalid-mode</td>
+        <td>"absolute" is no longer a valid mode -&gt; 400</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>400</td>
+        <td><code>{"mode":"absolute","value":10}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-NEG-missing-value</td>
+        <td>delta missing value -&gt; 400</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>400</td>
+        <td><code>{"mode":"delta"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-NEG-nonnumeric-value</td>
+        <td>delta non-numeric value -&gt; 400</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>400</td>
+        <td><code>{"mode":"delta","value":"fifty"}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-NEG-empty-listingIds</td>
+        <td>delta with explicit empty listingIds array -&gt; 400</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>400</td>
+        <td><code>{"mode":"delta","listingIds":[],"value":10}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-NEG-empty-updates</td>
+        <td>set-many with empty updates array -&gt; 400</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>400</td>
+        <td><code>{"mode":"set-many","updates":[]}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULK-SETMANY-30</td>
+        <td>set-many handles 30 listings in a single call (medium-bulk smoke test)</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"set-many","updates":"[30 entries]"}</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Visibility</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>VIS-BROWSE-SELL-DEFAULT</td>
+        <td>Browse side=SELL returns only active listings by default</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-BROWSE-BUY-DEFAULT</td>
+        <td>Browse side=BUY returns only active requirements by default</td>
+        <td>GET /api/v1/listings?side=BUY</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-OWN-ANY-STATUS</td>
+        <td>A user can see their OWN listings in any status (not just active)</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=active,na,price_expired,withdrawn,traded</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-OTHER-ACTIVE-OK</td>
+        <td>Browsing another user's listings with status=active (or default) is allowed</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=active</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-OTHER-NONACTIVE-BLOCKED</td>
+        <td>Non-owner, non-admin requesting another user's non-active status -&gt; 403</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=withdrawn</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-ADMIN-SEES-ANY-STATUS</td>
+        <td>Admin CAN request another user's non-active status (oversight)</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=withdrawn,traded</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-SORT-SELL-CHEAPEST-FIRST</td>
+        <td>SELL browse within a category is sorted cheapest-first</td>
+        <td>GET /api/v1/listings?side=SELL&amp;categoryId=99753a4e-bce9-4d37-93de-bfd5850780c9&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="fail">
+        <td>VIS-SORT-BUY-NEWEST-FIRST</td>
+        <td>BUY browse within a category is sorted newest-first<div class="fail-detail"><strong>Error:</strong> createdAt not sorted descending at index 1<br/>
+           <strong>Request:</strong> <code></code><br/>
+           <strong>Expected:</strong> <code></code><br/>
+           <strong>Actual:</strong> <code>{"timestamps":[null,null,null,null,null]}</code></div></td>
+        <td>GET /api/v1/listings?side=BUY&amp;categoryId=99753a4e-bce9-4d37-93de-bfd5850780c9&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">FAIL</td>
+      </tr>
+<tr class="pass">
+        <td>VIS-NO-FIELD-LEAK</td>
+        <td>GET /listings/:id exposes only the documented subset of the owner's profile</td>
+        <td>GET /api/v1/listings/41f71d5e-8693-4b32-8d44-03128ce623d9</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910001</td>
+        <td>+917000910001 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910001</td>
+        <td>Another user (+917000910002) cannot read +917000910001's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910002</td>
+        <td>+917000910002 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=6a2052ea-c312-4d06-9a4c-d2c66d1516c2&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910002</td>
+        <td>Another user (+917000910003) cannot read +917000910002's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=6a2052ea-c312-4d06-9a4c-d2c66d1516c2&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910003</td>
+        <td>+917000910003 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=bf024f2f-9453-4d0b-9128-85c83f7d6954&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910003</td>
+        <td>Another user (+917000910004) cannot read +917000910003's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=bf024f2f-9453-4d0b-9128-85c83f7d6954&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910004</td>
+        <td>+917000910004 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=2f11c616-7742-479d-8a18-1588a98fa268&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910004</td>
+        <td>Another user (+917000910005) cannot read +917000910004's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=2f11c616-7742-479d-8a18-1588a98fa268&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910005</td>
+        <td>+917000910005 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=61eacb83-d2c8-496f-a1e0-ec19be159375&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910005</td>
+        <td>Another user (+917000910006) cannot read +917000910005's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=61eacb83-d2c8-496f-a1e0-ec19be159375&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910006</td>
+        <td>+917000910006 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=370e97df-7603-44e4-a7ba-c7708ced75aa&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910006</td>
+        <td>Another user (+917000910007) cannot read +917000910006's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=370e97df-7603-44e4-a7ba-c7708ced75aa&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910007</td>
+        <td>+917000910007 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=7b1e02e6-3eaa-4072-b014-d71cd485a9ae&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910007</td>
+        <td>Another user (+917000910008) cannot read +917000910007's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=7b1e02e6-3eaa-4072-b014-d71cd485a9ae&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910008</td>
+        <td>+917000910008 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=a4979d9a-5fbb-4b86-8033-859d51a6e96f&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910008</td>
+        <td>Another user (+917000910009) cannot read +917000910008's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=a4979d9a-5fbb-4b86-8033-859d51a6e96f&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910009</td>
+        <td>+917000910009 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=7d53f9f3-f425-4fc5-a72b-3e6bee872f2b&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910009</td>
+        <td>Another user (+917000910010) cannot read +917000910009's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=7d53f9f3-f425-4fc5-a72b-3e6bee872f2b&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910010</td>
+        <td>+917000910010 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=b3cfc750-143a-4588-9cb4-e176f2c4b5b8&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910010</td>
+        <td>Another user (+917000910011) cannot read +917000910010's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=b3cfc750-143a-4588-9cb4-e176f2c4b5b8&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910011</td>
+        <td>+917000910011 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fedbb333-afe5-4a0b-ac8f-7e745a3cb596&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910011</td>
+        <td>Another user (+917000910012) cannot read +917000910011's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fedbb333-afe5-4a0b-ac8f-7e745a3cb596&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910012</td>
+        <td>+917000910012 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=c08fc6ee-f286-4da5-bb4b-194de6738b15&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910012</td>
+        <td>Another user (+917000910013) cannot read +917000910012's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=c08fc6ee-f286-4da5-bb4b-194de6738b15&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910013</td>
+        <td>+917000910013 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=a8014931-40f1-4c40-be0b-ca8b73d9a398&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910013</td>
+        <td>Another user (+917000910014) cannot read +917000910013's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=a8014931-40f1-4c40-be0b-ca8b73d9a398&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910014</td>
+        <td>+917000910014 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=8a4dd4a1-4e96-4f35-b7f5-848d32635802&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910014</td>
+        <td>Another user (+917000910015) cannot read +917000910014's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=8a4dd4a1-4e96-4f35-b7f5-848d32635802&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000910015</td>
+        <td>+917000910015 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=6f8f671c-fb83-4698-8b9d-d90740006e07&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000910015</td>
+        <td>Another user (+917000920001) cannot read +917000910015's non-active listings</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=6f8f671c-fb83-4698-8b9d-d90740006e07&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920001</td>
+        <td>+917000920001 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=23f0a146-92a2-450f-b926-0f3b82c23b35&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920001</td>
+        <td>Another user (+917000920002) cannot read +917000920001's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=23f0a146-92a2-450f-b926-0f3b82c23b35&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920002</td>
+        <td>+917000920002 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=39cbabe0-da13-4627-a3af-061d01155c08&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920002</td>
+        <td>Another user (+917000920003) cannot read +917000920002's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=39cbabe0-da13-4627-a3af-061d01155c08&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920003</td>
+        <td>+917000920003 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=d5f4f71f-3549-4a6d-ae5c-5ce0eb05d9a6&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920003</td>
+        <td>Another user (+917000920004) cannot read +917000920003's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=d5f4f71f-3549-4a6d-ae5c-5ce0eb05d9a6&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920004</td>
+        <td>+917000920004 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=045c35fb-3ca4-41f1-b8d3-a95fe05bb10c&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920004</td>
+        <td>Another user (+917000920005) cannot read +917000920004's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=045c35fb-3ca4-41f1-b8d3-a95fe05bb10c&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920005</td>
+        <td>+917000920005 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=6a1b47d6-7d83-4cec-af35-a2b5fc81da4e&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920005</td>
+        <td>Another user (+917000920006) cannot read +917000920005's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=6a1b47d6-7d83-4cec-af35-a2b5fc81da4e&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920006</td>
+        <td>+917000920006 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=c8a90e2b-5b1d-4ee7-bb1c-1641a1923211&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920006</td>
+        <td>Another user (+917000920007) cannot read +917000920006's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=c8a90e2b-5b1d-4ee7-bb1c-1641a1923211&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920007</td>
+        <td>+917000920007 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=cef0075d-4de9-4746-9ec0-c513201de35c&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920007</td>
+        <td>Another user (+917000920008) cannot read +917000920007's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=cef0075d-4de9-4746-9ec0-c513201de35c&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920008</td>
+        <td>+917000920008 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=dd66bc95-d90b-428a-8c4e-98080238c9d7&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920008</td>
+        <td>Another user (+917000920009) cannot read +917000920008's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=dd66bc95-d90b-428a-8c4e-98080238c9d7&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920009</td>
+        <td>+917000920009 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=a86ff77c-021c-42bc-8959-9a25806bdaa1&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920009</td>
+        <td>Another user (+917000920010) cannot read +917000920009's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=a86ff77c-021c-42bc-8959-9a25806bdaa1&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-SELF-+917000920010</td>
+        <td>+917000920010 ("my listings") sees exactly their own listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=0005ae2b-5c96-4db0-9648-9ab7a688295e&amp;status=active,na,price_expired,withdrawn,traded&amp;limit=100</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>ISO-PROBE-+917000920010</td>
+        <td>Another user (+917000910001) cannot read +917000920010's non-active listings</td>
+        <td>GET /api/v1/listings?side=BUY&amp;userId=0005ae2b-5c96-4db0-9648-9ab7a688295e&amp;status=withdrawn,traded,price_expired&amp;limit=100</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Withdraw</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>WITHDRAW-OWNER-OK</td>
+        <td>Owner withdraws their own listing -&gt; status withdrawn, row stays in DB</td>
+        <td>PATCH /api/v1/listings/ff35fa72-b7a1-4916-bbc9-6a4cb51890a3/withdraw</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>WITHDRAW-NONOWNER-BLOCKED</td>
+        <td>Another user cannot withdraw someone else's listing</td>
+        <td>PATCH /api/v1/listings/c9baa093-4e9d-46f9-ba2f-2e86ee604b55/withdraw</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>WITHDRAW-DOUBLE</td>
+        <td>Withdrawing an already-withdrawn listing -&gt; 409</td>
+        <td>PATCH /api/v1/listings/ff35fa72-b7a1-4916-bbc9-6a4cb51890a3/withdraw</td>
+        <td>409</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>WITHDRAW-HIDDEN-FROM-BROWSE</td>
+        <td>A withdrawn listing no longer appears in default browse</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>WITHDRAW-NOT-RESURRECTED-BY-BULK</td>
+        <td>Bulk-price (set-many) cannot resurrect a withdrawn listing</td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td>200</td>
+        <td><code>{"mode":"set-many","updates":[{"listingId":"ff35fa72-b7a1-4916-bbc9-6a4cb51890a3","price":5000}]}</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Expiry</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>EXPIRY-RUN</td>
+        <td>On-demand expiry job flips active -&gt; price_expired, keeps price and row intact</td>
+        <td></td>
+        <td></td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>EXPIRY-HIDDEN-FROM-BROWSE</td>
+        <td>Expired listings are hidden from default browse</td>
+        <td>GET /api/v1/listings?side=SELL&amp;userId=fba2b6a1-813c-4c57-85f9-55d36d858022</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>EXPIRY-REPRICE-VISIBLE-AGAIN</td>
+        <td>Re-pricing an expired listing makes it active and visible again</td>
+        <td>PATCH /api/v1/listings/78dc72a3-4dac-4aa0-897e-090be4feb6ae</td>
+        <td>200</td>
+        <td><code>{"price":1005}</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>AuthEdges</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>AUTH-NO-TOKEN</td>
+        <td>No Authorization header -&gt; 401</td>
+        <td>GET /api/v1/listings?side=SELL</td>
+        <td>401</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>AUTH-GARBAGE-TOKEN</td>
+        <td>Garbage/malformed token -&gt; 401</td>
+        <td>GET /api/v1/listings?side=SELL</td>
+        <td>401</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>AUTH-SUSPENDED-USER-BLOCKED</td>
+        <td>Suspended user is blocked immediately, even with a previously-valid token</td>
+        <td>GET /api/v1/listings?side=SELL</td>
+        <td>401</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>AUTH-BUYER-CAN-CREATE-SELL</td>
+        <td>A buyer-role account CAN create a SELL listing (no role gate — by design, see CLAUDE.md §3)</td>
+        <td>POST /api/v1/listings</td>
+        <td>201</td>
+        <td><code>{"side":"SELL","categoryId":"99753a4e-bce9-4d37-93de-bfd5850780c9","commodityId":"8b57c00a-cfd4-4cd0-af3e-a4273c46f520","quantityBags":5,"weightKg":99…</code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>Concurrency</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="fail">
+        <td>CONCURRENCY-10-PARALLEL-DELTA</td>
+        <td>10 parallel delta(+10) requests on the same listing: checks for lost updates from the read-then-write race<div class="fail-detail"><strong>Error:</strong> expected 1100 after 10x +10, got 1020 — lost update(s) under concurrency
+
+1020 !== 1100
+<br/>
+           <strong>Request:</strong> <code>{"mode":"delta","listingIds":["1c3211a7-a6a6-441b-8d4e-97968a764f10"],"value":10,"note":"fired 10x in parallel"}</code><br/>
+           <strong>Expected:</strong> <code></code><br/>
+           <strong>Actual:</strong> <code>{"finalPrice":1020,"expectedPrice":1100,"responseStatuses":[200,200,200,200,200,200,200,200,200,200]}</code></div></td>
+        <td>PATCH /api/v1/listings/bulk-price</td>
+        <td></td>
+        <td><code>{"mode":"delta","listingIds":["1c3211a7-a6a6-441b-8d4e-97968a764f10"],"value":10,"note":"fired 10x in parallel"}</code></td>
+        <td class="status">FAIL</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>BulkUpload</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>BULKUPLOAD-TEMPLATE-DOWNLOAD</td>
+        <td>GET /listings/template returns a non-empty xlsx</td>
+        <td>GET /api/v1/listings/template</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULKUPLOAD-PARSE</td>
+        <td>Upload a messy sheet: exact/N-A/fuzzy/unresolved/duplicate rows all handled</td>
+        <td>POST /api/v1/listings/bulk-upload</td>
+        <td>200</td>
+        <td><code>{"rowCount":5}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="fail">
+        <td>BULKUPLOAD-NA-PRICE-TEXT</td>
+        <td>A price cell containing the literal text "N/A" (not just blank) is treated as no-price, not a validation error<div class="fail-detail"><strong>Error:</strong> a row whose only issue is an "N/A" price must still be ready, per CLAUDE.md §4.7
+
+false !== true
+<br/>
+           <strong>Request:</strong> <code>{"price":"N/A"}</code><br/>
+           <strong>Expected:</strong> <code></code><br/>
+           <strong>Actual:</strong> <code>{"rowIndex":2,"raw":{"category":"QA_Chana","commodity":"QA Kabli Chana Bold","quality":"medium","quantityBags":6,"weightKg":40,"price":"N/A"},"resolved":{"categoryId":"df13f6eb-9703-4b3f-9558-708bfec6991c","categoryMatch":"exact","categorySuggestion":null,"commodityId":"a71b2532-7ec1-413e-b7e6-391e1e34114b","commodityMatch":"exact","commoditySuggestion":null,"itemName":"QA Kabli Chana Bold","quali…</code></div></td>
+        <td>POST /api/v1/listings/bulk-upload</td>
+        <td>200</td>
+        <td><code>{"price":"N/A"}</code></td>
+        <td class="status">FAIL</td>
+      </tr>
+<tr class="pass">
+        <td>BULKUPLOAD-CONFIRM</td>
+        <td>Confirming only the ready rows creates/updates exactly those; duplicate-combo row updates in place</td>
+        <td>POST /api/v1/listings/bulk-confirm</td>
+        <td>200</td>
+        <td><code>{"rowCount":3}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>BULKUPLOAD-REUPLOAD-UPDATES-NOT-DUPLICATES</td>
+        <td>Re-uploading the same sheet updates existing listings instead of creating duplicates</td>
+        <td>POST /api/v1/listings/bulk-confirm</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+<section>
+      <h3>TosGate</h3>
+      <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Endpoint</th><th>HTTP</th><th>Request</th><th>Result</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>TOSGATE-STATUS-ACCESSIBLE-PREACCEPT</td>
+        <td>GET /tos/status works even before accepting (no chicken-and-egg lock)</td>
+        <td>GET /api/v1/tos/status</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>TOSGATE-BLOCKED-PREACCEPT</td>
+        <td>A gated endpoint (GET /commodity-categories) is blocked with 403 before ToS acceptance</td>
+        <td>GET /api/v1/commodity-categories</td>
+        <td>403</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>TOSGATE-ACCEPT</td>
+        <td>Accepting the current ToS version succeeds</td>
+        <td>POST /api/v1/tos/accept</td>
+        <td>200</td>
+        <td><code>{"version":2}</code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>TOSGATE-UNBLOCKED-POSTACCEPT</td>
+        <td>The same gated endpoint now succeeds after accepting</td>
+        <td>GET /api/v1/commodity-categories</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr>
+<tr class="pass">
+        <td>TOSGATE-INVITES-NOT-GATED</td>
+        <td>/invites stays reachable for admin regardless of ToS gate (admin panel surface, deliberately excluded)</td>
+        <td>GET /api/v1/invites</td>
+        <td>200</td>
+        <td><code></code></td>
+        <td class="status">PASS</td>
+      </tr></tbody>
+  </table>
+    </section>
+
+  <section>
+    <h3>25-user isolation matrix</h3>
+    <table>
+    <thead><tr><th>Phone</th><th>Role</th><th>Listings created</th><th>Seen in "my listings"</th><th>Leaks found</th></tr></thead>
+    <tbody><tr class="pass">
+        <td>+917000910001</td>
+        <td>seller</td>
+        <td>7</td>
+        <td>7</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910002</td>
+        <td>seller</td>
+        <td>6</td>
+        <td>6</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910003</td>
+        <td>seller</td>
+        <td>8</td>
+        <td>8</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910004</td>
+        <td>seller</td>
+        <td>12</td>
+        <td>12</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910005</td>
+        <td>seller</td>
+        <td>9</td>
+        <td>9</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910006</td>
+        <td>seller</td>
+        <td>7</td>
+        <td>7</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910007</td>
+        <td>seller</td>
+        <td>8</td>
+        <td>8</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910008</td>
+        <td>seller</td>
+        <td>38</td>
+        <td>38</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910009</td>
+        <td>seller</td>
+        <td>5</td>
+        <td>5</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910010</td>
+        <td>seller</td>
+        <td>6</td>
+        <td>6</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910011</td>
+        <td>seller</td>
+        <td>7</td>
+        <td>7</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910012</td>
+        <td>seller</td>
+        <td>8</td>
+        <td>8</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910013</td>
+        <td>seller</td>
+        <td>5</td>
+        <td>5</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910014</td>
+        <td>seller</td>
+        <td>6</td>
+        <td>6</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000910015</td>
+        <td>seller</td>
+        <td>7</td>
+        <td>7</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920001</td>
+        <td>buyer</td>
+        <td>2</td>
+        <td>2</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920002</td>
+        <td>buyer</td>
+        <td>3</td>
+        <td>3</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920003</td>
+        <td>buyer</td>
+        <td>4</td>
+        <td>4</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920004</td>
+        <td>buyer</td>
+        <td>2</td>
+        <td>2</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920005</td>
+        <td>buyer</td>
+        <td>3</td>
+        <td>3</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920006</td>
+        <td>buyer</td>
+        <td>4</td>
+        <td>4</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920007</td>
+        <td>buyer</td>
+        <td>2</td>
+        <td>2</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920008</td>
+        <td>buyer</td>
+        <td>3</td>
+        <td>3</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920009</td>
+        <td>buyer</td>
+        <td>4</td>
+        <td>4</td>
+        <td>0</td>
+      </tr>
+<tr class="pass">
+        <td>+917000920010</td>
+        <td>buyer</td>
+        <td>2</td>
+        <td>2</td>
+        <td>0</td>
+      </tr></tbody>
+  </table>
+  </section>
+
+  <section>
+    <h3>Bugs found</h3>
+    <div class="bug bug-high">
+        <h4>#1 [high] Every listing API response is missing createdAt (and updatedAt) — serializeListing destructures them out and never adds them back</h4>
+        <p><strong>Repro:</strong> Create or fetch any listing via the API and inspect the JSON response (see VIS-SORT-BUY-NEWEST-FIRST, which caught this indirectly: createdAt comes back undefined, so new Date(undefined).getTime() is NaN and the "is it sorted" check becomes meaningless).</p>
+        <p><strong>Expected:</strong> response.data.createdAt (and arguably updatedAt) should be present — clients need it to show "posted X ago" and to verify the documented newest-first BUY sort themselves.</p>
+        <p><strong>Actual:</strong> { const { createdAt, updatedAt, ...rest } = listing; return { ...rest, price: ... } } — both fields are destructured purely to exclude them from `...rest`, then never added back to the returned object.</p>
+        <p><strong>Suspected location:</strong> <code>services/listing.service.js — serializeListing()</code></p>
+        <p><strong>Proposed fix:</strong> Return createdAt explicitly: `{ ...rest, price: ..., createdAt: listing.createdAt }`. Confirm whether updatedAt should also be exposed, or was deliberately hidden.</p>
+      </div>
+<div class="bug bug-medium">
+        <h4>#2 [medium] bulkDeltaPrice (and set-many) reads the current price and writes it back without a row lock / atomic increment — concurrent requests lose updates</h4>
+        <p><strong>Repro:</strong> Fire 10 parallel PATCH /listings/bulk-price {mode:"delta", value:10} requests against the same listingId starting from price=1000 (see CONCURRENCY-10-PARALLEL-DELTA).</p>
+        <p><strong>Expected:</strong> Final price = 1000 + 10×10 = 1100 (every delta applied).</p>
+        <p><strong>Actual:</strong> expected 1100 after 10x +10, got 1020 — lost update(s) under concurrency
+
+1020 !== 1100
+</p>
+        <p><strong>Suspected location:</strong> <code>services/listing.service.js — bulkDeltaPrice()</code></p>
+        <p><strong>Proposed fix:</strong> Use a Prisma atomic update (price: { increment: value }) for the delta path instead of reading price in JS and writing the computed value back, or serialize same-listing writes behind a row lock / SERIALIZABLE transaction.</p>
+      </div>
+<div class="bug bug-high">
+        <h4>#3 [high] Bulk-upload does not honor the literal text "N/A" in a price cell — it is rejected as an invalid price instead of treated as no-price</h4>
+        <p><strong>Repro:</strong> Upload a sheet with a row whose price cell is the text "N/A" (see BULKUPLOAD-NA-PRICE-TEXT). CLAUDE.md §4.7 documents this as the real convention used on the founder's actual supplier sheets.</p>
+        <p><strong>Expected:</strong> A price of "N/A" should parse to a null price (row stays ready), same as a truly blank cell.</p>
+        <p><strong>Actual:</strong> optionalPositiveDecimal(value) does Number(value) and rejects anything non-finite — Number("N/A") is NaN, so the row gets a validation error and is excluded from "ready".</p>
+        <p><strong>Suspected location:</strong> <code>services/listing.validation.js — optionalPositiveDecimal() (used from services/listing-bulk.service.js per-row parsing)</code></p>
+        <p><strong>Proposed fix:</strong> In the bulk-upload row parser specifically, treat the case-insensitive string "N/A" (and "NA") the same as a blank price cell before calling optionalPositiveDecimal.</p>
+      </div>
+<div class="bug bug-low">
+        <h4>#4 [low] GET /listings/:id exposes the listing owner's raw phone number to any authenticated viewer</h4>
+        <p><strong>Repro:</strong> Any logged-in user calls GET /listings/:id on a listing they do not own.</p>
+        <p><strong>Expected:</strong> Not asserted either way by CLAUDE.md — flagged for a product decision, not a confirmed defect.</p>
+        <p><strong>Actual:</strong> response.data.user.phone is always included (services/listing.service.js getListingById select clause).</p>
+        <p><strong>Suspected location:</strong> <code>services/listing.service.js — getListingById()</code></p>
+        <p><strong>Proposed fix:</strong> Confirm with the founder whether phone should stay hidden until a negotiation/contact is initiated.</p>
+      </div>
+<div class="bug bug-low">
+        <h4>#5 [low] Stray debug console.log left in invite.controller.js</h4>
+        <p><strong>Repro:</strong> Call POST /invites.</p>
+        <p><strong>Expected:</strong> No debug output.</p>
+        <p><strong>Actual:</strong> console.log("this is issue") fires on every call.</p>
+        <p><strong>Suspected location:</strong> <code>controllers/invite.controller.js:6</code></p>
+        <p><strong>Proposed fix:</strong> Remove the leftover console.log.</p>
+      </div>
+  </section>
+
+  <section>
+    <h3>Not built / gaps</h3>
+    <ul><li>No endpoint exists to set/update AppUser name/firmName/city after onboarding (CLAUDE.md §4.1 "capture minimal profile" has no corresponding route — routes/users.js is an unused stub).</li><li>No negotiation/offer/trade API exists yet (schema tables present, no routes/controllers/services) — out of scope for this suite by design.</li><li>No freight API exists yet (schema table present, no routes) — out of scope for this suite by design.</li><li>WhatsApp OTP channel is not implemented — otp.service.js is a static "1111" stub, not wired to the OtpVerification table.</li><li>Screenshot/OCR sheet parsing (Phase 2 per CLAUDE.md §4.8) is not implemented — only the structured-Excel bulk-upload/confirm flow exists, and was tested here.</li><li>Per-supplier learned templates (SourceTemplate, CLAUDE.md §4.8) are schema-only, no logic built yet.</li></ul>
+  </section>
+
+  <section>
+    <h3>What was NOT tested</h3>
+    <ul><li>Negotiation/offer/trade flows (not built yet).</li><li>Freight routes (not built yet).</li><li>Real OTP delivery (SMS/WhatsApp) — otp.service.js is a static stub, so delivery itself was not exercised.</li><li>Admin "edit on behalf of a user" + AuditLog writes for listings specifically (AuditLog is written for invites/categories/commodities/ToS/settings, not for listing create/update/withdraw/bulk-price — worth noting as its own gap).</li><li>Load/performance testing beyond the 30-item and 10-parallel-request smoke tests.</li><li>Pagination correctness beyond default page/limit (page/limit params exist in lib/pagination.js but weren't exhaustively boundary-tested here).</li></ul>
+  </section>
+</body>
+</html>

@@ -7,7 +7,11 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test:e2e": "node test-e2e/run.js",
+    "test:report": "node test-e2e/openReport.js",
+    "test:demo": "node test-e2e/demo.js",
+    "test:cleanup": "node scripts/cleanup-qa-data.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
