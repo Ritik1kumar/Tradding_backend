@@ -1,9 +1,9 @@
 var express = require('express');
 var router = express.Router();
-var { authenticate, requireRole } = require('../middleware/auth');
+var { authenticate, requireRole, requireTosAccepted } = require('../middleware/auth');
 var commodityCategoryController = require('../controllers/commodityCategory.controller');
 
-router.use(authenticate);
+router.use(authenticate, requireTosAccepted);
 
 router.post('/', requireRole(['admin']), commodityCategoryController.create);
 router.get('/', commodityCategoryController.list);

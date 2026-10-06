@@ -39,6 +39,7 @@ async function list(req, res, next) {
       maxPrice,
       skip,
       take,
+      requestingUser: req.user,
     });
     sendSuccess(res, 200, data, buildMeta({ page, limit, total }));
   } catch (err) {
@@ -68,8 +69,7 @@ async function update(req, res, next) {
 
 async function bulkPrice(req, res, next) {
   try {
-    const { listingIds, mode, value } = req.body;
-    const result = await listingService.bulkUpdatePrice(req.user.id, { listingIds, mode, value });
+    const result = await listingService.bulkUpdatePrice(req.user.id, req.body);
     sendSuccess(res, 200, result);
   } catch (err) {
     next(err);
