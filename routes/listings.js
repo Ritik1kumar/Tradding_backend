@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var multer = require('multer');
-var { authenticate } = require('../middleware/auth');
+var { authenticate, requireTosAccepted } = require('../middleware/auth');
 var { AppError } = require('../lib/errors');
 var listingController = require('../controllers/listing.controller');
 var listingBulkController = require('../controllers/listing-bulk.controller');
@@ -39,7 +39,7 @@ function handleBulkUploadFile(req, res, next) {
   });
 }
 
-router.use(authenticate);
+router.use(authenticate, requireTosAccepted);
 
 router.post('/', listingController.create);
 router.get('/', listingController.list);

@@ -226,5 +226,8 @@ module.exports = {
   requirePositiveInt,
   optionalPositiveInt,
   optionalPositiveDecimal,
+  // Exported for reuse by listing.service.js's bulk "set-many" mode — each
+  // {listingId, price} entry needs the same sticky-price rule as a single PATCH.
+  requirePositiveDecimal,
   optionalEnum,
 };
