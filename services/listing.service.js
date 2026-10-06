@@ -27,7 +27,7 @@ function toNumberOrNull(decimal) {
 }
 
 function serializeListing(listing) {
-  const { createdAt, updatedAt, ...rest } = listing;
+  const { updatedAt, ...rest } = listing;
   return { ...rest, price: toNumberOrNull(listing.price) };
 }
 
@@ -301,54 +301,63 @@ async function bulkDeltaPrice(userId, { listingIds, value }) {
     throw new AppError('value must be a number', 400);
   }
 
-  // listingIds omitted (or not provided at all) => apply to ALL of the
-  // caller's own active/price_expired listings, not just a selected subset.
-  let explicitIds = null;
+  let idsToProcess;
   if (listingIds !== undefined) {
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
       throw new AppError('listingIds must be a non-empty array', 400);
     }
     listingIds.forEach((id) => validateUuid(id, 'listingIds'));
-    explicitIds = listingIds;
+    idsToProcess = listingIds;
+  } else {
+    // listingIds omitted => ALL of the caller's own active/price_expired
+    // listings, as of right now. This initial read only decides WHICH ids to
+    // attempt — the actual price math happens atomically per-row below, so a
+    // stale read here can never cause a lost update.
+    const candidates = await prisma.listing.findMany({
+      where: { userId, status: { in: EDITABLE_STATUSES } },
+      select: { id: true },
+    });
+    idsToProcess = candidates.map((c) => c.id);
   }
-
-  const listings = await prisma.listing.findMany({
-    where: {
-      userId,
-      status: { in: EDITABLE_STATUSES },
-      ...(explicitIds ? { id: { in: explicitIds } } : {}),
-    },
-  });
-  const listingById = new Map(listings.map((listing) => [listing.id, listing]));
-  // When explicitIds is null, every row already came from the userId+status
-  // filtered query above, so idsToProcess can't contain an id missing from the map.
-  const idsToProcess = explicitIds || listings.map((listing) => listing.id);
 
   const skipped = [];
-  const toUpdate = [];
+  const updated = [];
+  const priceValidUntil = idsToProcess.length ? await computeNextExpiryCutoff() : null;
 
   for (const id of idsToProcess) {
-    const listing = listingById.get(id);
-    if (!listing) {
-      skipped.push({ id, reason: 'not_editable' });
+    // One atomic UPDATE: Postgres reads the current price, adds the delta, and
+    // checks the "> 0" guard all in a single statement, so two concurrent
+    // deltas on the same row can never both compute from the same stale price
+    // (the previous version did a separate findMany-then-update, which raced).
+    const applied = await prisma.$queryRaw`
+      UPDATE "listing"
+      SET price = price + ${numericValue},
+          status = 'active',
+          price_valid_until = ${priceValidUntil}
+      WHERE id = ${id}::uuid
+        AND user_id = ${userId}::uuid
+        AND status IN ('active', 'price_expired')
+        AND price IS NOT NULL
+        AND (price + ${numericValue}) > 0
+      RETURNING id
+    `;
+
+    if (applied.length === 0) {
+      const current = await prisma.listing.findUnique({ where: { id } });
+      if (!current || current.userId !== userId || !EDITABLE_STATUSES.includes(current.status)) {
+        skipped.push({ id, reason: 'not_editable' });
+      } else if (current.price === null) {
+        skipped.push({ id, reason: 'no_prior_price' });
+      } else {
+        skipped.push({ id, reason: 'result_not_positive' });
+      }
       continue;
     }
 
-    const currentPrice = toNumberOrNull(listing.price);
-    if (currentPrice === null) {
-      skipped.push({ id, reason: 'no_prior_price' });
-      continue;
-    }
-    const nextPrice = currentPrice + numericValue;
-    if (nextPrice <= 0) {
-      skipped.push({ id, reason: 'result_not_positive' });
-      continue;
-    }
-
-    toUpdate.push({ id, price: nextPrice });
+    const fresh = await prisma.listing.findUnique({ where: { id } });
+    updated.push(serializeListing(fresh));
   }
 
-  const updated = await applyBulkPriceUpdates(toUpdate);
   return { updated, skipped };
 }
 
