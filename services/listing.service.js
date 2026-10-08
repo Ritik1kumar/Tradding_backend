@@ -171,18 +171,41 @@ async function getListings({
   }
 
   const statuses = parseStatusFilter(status);
+  const requestedNonPublicStatus = statuses.some((s) => s !== 'active');
 
-  // userId stays open to every caller — browsing a specific firm's listings
-  // (CLAUDE.md §4.0.1 "Seller Listings page") is a buyer-facing feature, not
-  // admin-only. What's actually restricted is the STATUS someone can see when
-  // looking at someone else's listings: a non-owner, non-admin caller only
-  // ever gets the public `active` ones, never withdrawn/na/traded/price_expired.
-  if (userId !== undefined) {
-    const isOwnListings = requestingUser && requestingUser.id === userId;
-    const isAdmin = requestingUser && requestingUser.roles.includes('admin');
-    const requestedNonPublicStatus = statuses.some((s) => s !== 'active');
-    if (!isOwnListings && !isAdmin && requestedNonPublicStatus) {
-      throw new AppError("Cannot view another user's non-active listings", 403);
+  const isAdmin = requestingUser && requestingUser.roles.includes('admin');
+  // Whoever HOLDS the role that owns this side's data treats it as private-by-
+  // default: a seller owns SELL listings, a buyer owns BUY requirements. Anyone
+  // else (the opposite role, or no matching role) is just browsing the market —
+  // CLAUDE.md §4.3's "buyers browse sell listings / sellers browse buy
+  // requirements" — and only ever sees the public `active` rows.
+  const ownerRole = side === 'SELL' ? 'seller' : 'buyer';
+  const isOwnerRoleForSide = requestingUser && requestingUser.roles.includes(ownerRole);
+
+  let effectiveUserId = userId;
+
+  if (!isAdmin) {
+    if (userId !== undefined) {
+      const isOwnListings = requestingUser && requestingUser.id === userId;
+      if (!isOwnListings && isOwnerRoleForSide) {
+        // e.g. a seller asking for another seller's SELL listings, or a buyer
+        // asking for another buyer's BUY requirements — not a feature, blocked.
+        throw new AppError(`Cannot view another ${ownerRole}'s listings`, 403);
+      }
+      if (!isOwnListings && requestedNonPublicStatus) {
+        // Firm-page view of someone else's data (CLAUDE.md §4.0.1 "Seller
+        // Listings page" / "Buyer Requirements page") — only their public
+        // `active` rows, never withdrawn/na/traded/price_expired.
+        throw new AppError('Cannot view non-active listings other than your own', 403);
+      }
+    } else if (isOwnerRoleForSide) {
+      // No userId given, and this account owns this side's data => default to
+      // "my listings", not a platform-wide browse of everyone's rows.
+      effectiveUserId = requestingUser.id;
+    } else if (requestedNonPublicStatus) {
+      // Browsing everyone else's side of the market — never allowed to pull
+      // non-active statuses platform-wide.
+      throw new AppError('Cannot view non-active listings other than your own', 403);
     }
   }
 
@@ -195,7 +218,7 @@ async function getListings({
     status: { in: statuses },
     ...(categoryId ? { categoryId } : {}),
     ...(commodityId ? { commodityId } : {}),
-    ...(userId ? { userId } : {}),
+    ...(effectiveUserId ? { userId: effectiveUserId } : {}),
     ...(itemNameFilter ? { itemName: itemNameFilter } : {}),
     ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
     ...(priceFilter ? { price: priceFilter } : {}),
