@@ -228,7 +228,13 @@ async function getListings({
   const orderBy = side === 'SELL' ? { price: 'asc' } : { createdAt: 'desc' };
 
   const [data, total] = await Promise.all([
-    prisma.listing.findMany({ where, orderBy, skip, take }),
+    prisma.listing.findMany({
+      where,
+      orderBy,
+      skip,
+      take,
+      include: { user: { select: { name: true, firmName: true, phone: true, roles: true } } },
+    }),
     prisma.listing.count({ where }),
   ]);
 
